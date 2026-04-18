@@ -30,58 +30,77 @@ export default function CameraViewport() {
   });
 
   return (
-    <div className="relative h-full w-full overflow-hidden rounded-3xl bg-zinc-900">
-      <video
-        ref={videoRef}
-        autoPlay
-        playsInline
-        muted
-        className="absolute inset-0 h-full w-full object-cover"
-      />
+    <div className="w-full p-6">
+      <div className="mx-auto w-full max-w-6xl">
+        <div className="relative aspect-video h-[500px] w-full overflow-hidden rounded-3xl bg-zinc-900 shadow-2xl">
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className="absolute inset-0 z-0 h-full w-full object-cover"
+          />
 
-      <canvas
-        ref={drawingCanvasRef}
-        className="pointer-events-none absolute inset-0 h-full w-full"
-      />
+          <canvas
+            ref={drawingCanvasRef}
+            className="pointer-events-none absolute inset-0 z-10 h-full w-full"
+          />
 
-      <canvas
-        ref={overlayCanvasRef}
-        className="pointer-events-none absolute inset-0 h-full w-full"
-      />
+          <canvas
+            ref={overlayCanvasRef}
+            className="pointer-events-none absolute inset-0 z-20 h-full w-full"
+          />
+        </div>
 
-      <div className="absolute left-4 top-4 flex gap-2">
+        {error && (
+          <div className="mt-4 rounded-2xl bg-red-500/20 p-3 text-sm text-red-100">
+            {error}
+          </div>
+        )}
+      </div>
+      <div className="absolute left-4 top-4 z-30 flex gap-2">
         <button
           onClick={() => void startCamera()}
-          className="rounded-xl bg-white/10 px-3 py-2 text-sm text-white"
+          className="rounded-xl bg-white/10 px-4 py-2 text-sm font-medium text-white backdrop-blur hover:bg-white/20"
         >
           Start
         </button>
 
         <button
           onClick={stopCamera}
-          className="rounded-xl bg-white/10 px-3 py-2 text-sm text-white"
+          className="rounded-xl bg-white/10 px-4 py-2 text-sm font-medium text-white backdrop-blur hover:bg-white/20"
         >
           Stop
         </button>
-      </div>
 
-      <div className="absolute right-4 top-4 rounded-full bg-black/50 px-3 py-1 text-sm text-white">
-        {isLoading
-          ? "Camera starten..."
-          : isActive
-            ? "Camera actief"
-            : "Camera uit"}
-      </div>
+        <button
+          onClick={clear}
+          className="rounded-xl bg-white/10 px-4 py-2 text-sm font-medium text-white backdrop-blur hover:bg-white/20"
+        >
+          Clear
+        </button>
 
-      <div className="absolute right-4 top-16 rounded-full bg-black/50 px-3 py-1 text-sm text-white">
-        Draw mode: {mode === "draw" ? "aan" : "uit"}
-      </div>
+        {/* <div className="absolute right-4 top-4 z-30 flex flex-col gap-2">
+          <div className="rounded-full bg-black/60 px-3 py-1 text-sm text-white backdrop-blur">
+            {isLoading
+              ? "Camera starten..."
+              : isActive
+                ? "Camera actief"
+                : "Camera uit"}
+          </div>
 
-      {error && (
-        <div className="absolute bottom-4 left-4 right-4 rounded-2xl bg-red-500/20 p-3 text-sm text-red-100">
-          {error}
-        </div>
-      )}
+          <div className="rounded-full bg-black/60 px-3 py-1 text-sm text-white backdrop-blur">
+            Draw mode: {mode === "draw" ? "aan" : "uit"}
+          </div>
+
+          <div className="rounded-full bg-black/60 px-3 py-1 text-sm text-white backdrop-blur">
+            Pointer:{" "}
+            {pointer
+              ? `${Math.round(pointer.x)}, ${Math.round(pointer.y)}`
+              : "geen"}
+          </div>
+        </div> */}
+      </div>
     </div>
   );
 }

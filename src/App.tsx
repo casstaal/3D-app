@@ -53,7 +53,9 @@ export default function HandCadUiStarter() {
         <main className="flex min-w-0 flex-col">
           <header className="flex items-center justify-between border-b border-zinc-800 bg-zinc-900/60 px-5 py-3">
             <div>
-              <h1 className="text-lg font-semibold">Hand CAD Prototype</h1>
+              <h1 className="text-white text-lg font-semibold">
+                Hand CAD Prototype
+              </h1>
             </div>
           </header>
 
