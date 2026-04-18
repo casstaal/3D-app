@@ -11,11 +11,12 @@ export default function CameraViewport() {
       facingMode: "user",
     });
 
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const drawingCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  useHandTracking({
+  const { mode } = useHandTracking({
     videoRef,
-    canvasRef,
+    overlayCanvasRef,
     enabled: isActive,
   });
 
@@ -30,7 +31,12 @@ export default function CameraViewport() {
       />
 
       <canvas
-        ref={canvasRef}
+        ref={drawingCanvasRef}
+        className="pointer-events-none absolute inset-0 h-full w-full"
+      />
+
+      <canvas
+        ref={overlayCanvasRef}
         className="pointer-events-none absolute inset-0 h-full w-full"
       />
 
@@ -56,6 +62,10 @@ export default function CameraViewport() {
           : isActive
             ? "Camera actief"
             : "Camera uit"}
+      </div>
+
+      <div className="absolute right-4 top-16 rounded-full bg-black/50 px-3 py-1 text-sm text-white">
+        Draw mode: {mode === "draw" ? "aan" : "uit"}
       </div>
 
       {error && (
