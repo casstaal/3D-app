@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import { useCamera } from "../hooks/useCamera";
 import { useHandTracking } from "../hooks/useHandTracking";
+import { useHandDrawing } from "../hooks/useHandDrawing";
 
 export default function CameraViewport() {
   const { videoRef, isLoading, isActive, error, startCamera, stopCamera } =
@@ -14,10 +15,18 @@ export default function CameraViewport() {
   const drawingCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  const { mode } = useHandTracking({
+  const { mode, pointer } = useHandTracking({
     videoRef,
     overlayCanvasRef,
     enabled: isActive,
+  });
+
+  const { clear } = useHandDrawing({
+    drawingCanvasRef,
+    videoRef,
+    enabled: isActive,
+    mode,
+    pointer,
   });
 
   return (
