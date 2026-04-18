@@ -1,7 +1,8 @@
-import { useRef } from "react";
+import { useState, useRef } from "react";
 import { useCamera } from "../hooks/useCamera";
 import { useHandTracking } from "../hooks/useHandTracking";
 import { useHandDrawing } from "../hooks/useHandDrawing";
+import type { DrawingMode } from "../features/handTracking/types";
 
 export default function CameraViewport() {
   const { videoRef, isLoading, isActive, error, startCamera, stopCamera } =
@@ -11,6 +12,8 @@ export default function CameraViewport() {
       height: 720,
       facingMode: "user",
     });
+
+  const [drawingMode, setDrawingMode] = useState<DrawingMode>("free");
 
   const drawingCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -27,6 +30,7 @@ export default function CameraViewport() {
     enabled: isActive,
     mode,
     pointer,
+    drawingMode,
   });
 
   return (
@@ -107,6 +111,29 @@ export default function CameraViewport() {
               : "geen"}
           </div>
         </div> */}
+      </div>
+      <div className="absolute left-4 top-16 z-30 flex gap-2">
+        <button
+          onClick={() => setDrawingMode("free")}
+          className={`rounded-xl px-4 py-2 text-sm font-medium text-white backdrop-blur ${
+            drawingMode === "free"
+              ? "bg-green-600/80"
+              : "bg-white/10 hover:bg-white/20"
+          }`}
+        >
+          Free draw
+        </button>
+
+        <button
+          onClick={() => setDrawingMode("shape-detect")}
+          className={`rounded-xl px-4 py-2 text-sm font-medium text-white backdrop-blur ${
+            drawingMode === "shape-detect"
+              ? "bg-green-600/80"
+              : "bg-white/10 hover:bg-white/20"
+          }`}
+        >
+          Shape detect
+        </button>
       </div>
     </div>
   );
