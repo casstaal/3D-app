@@ -21,7 +21,7 @@ export default function CameraViewport() {
     enabled: isActive,
   });
 
-  const { clear } = useHandDrawing({
+  const { clear, undo } = useHandDrawing({
     drawingCanvasRef,
     videoRef,
     enabled: isActive,
@@ -78,6 +78,13 @@ export default function CameraViewport() {
           className="rounded-xl bg-white/10 px-4 py-2 text-sm font-medium text-white backdrop-blur hover:bg-white/20"
         >
           Clear
+        </button>
+
+        <button
+          onClick={undo}
+          className="rounded-xl bg-white/10 px-4 py-2 text-sm font-medium text-white backdrop-blur hover:bg-white/20"
+        >
+          Undo
         </button>
 
         {/* <div className="absolute right-4 top-4 z-30 flex flex-col gap-2">

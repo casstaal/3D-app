@@ -103,7 +103,16 @@ export function useHandDrawing({
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   };
 
-  return { clear };
+  const undo = () => {
+    strokesRef.current.pop();
+
+    const canvas = drawingCanvasRef.current;
+    if (!canvas) return;
+
+    redraw(canvas, strokesRef.current, currentStrokeRef.current);
+  };
+
+  return { clear, undo };
 }
 
 function redraw(
