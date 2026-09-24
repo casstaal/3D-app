@@ -3,6 +3,7 @@ import { useCamera } from "../hooks/useCamera";
 import { useHandTracking } from "../hooks/useHandTracking";
 import { useHandDrawing } from "../hooks/useHandDrawing";
 import type { DrawingMode } from "../features/handTracking/types";
+import SceneViewport from "./SceneViewport";
 
 export default function CameraViewport() {
   const { videoRef, isLoading, isActive, error, startCamera, stopCamera } =
@@ -37,7 +38,7 @@ export default function CameraViewport() {
     <div className="w-full p-6">
       <div className="mx-auto w-full max-w-6xl">
         <div className="relative aspect-video h-[500px] w-full overflow-hidden rounded-3xl bg-zinc-900 shadow-2xl">
-          <video
+          {/* <video
             ref={videoRef}
             autoPlay
             playsInline
@@ -53,6 +54,30 @@ export default function CameraViewport() {
           <canvas
             ref={overlayCanvasRef}
             className="pointer-events-none absolute inset-0 z-20 h-full w-full"
+          /> */}
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className="absolute inset-0 z-0 h-full w-full object-cover"
+          />
+
+          {/* Bestaande 2D tekening - voorlopig behouden */}
+          <canvas
+            ref={drawingCanvasRef}
+            className="pointer-events-none absolute inset-0 z-10 h-full w-full"
+          />
+
+          {/* Nieuwe echte 3D-laag */}
+          <div className="absolute inset-0 z-20">
+            <SceneViewport />
+          </div>
+
+          {/* Handtracking blijft altijd bovenop */}
+          <canvas
+            ref={overlayCanvasRef}
+            className="pointer-events-none absolute inset-0 z-30 h-full w-full"
           />
         </div>
 

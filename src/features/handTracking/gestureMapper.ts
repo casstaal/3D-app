@@ -1,21 +1,7 @@
-export type Point = {
-  x: number;
-  y: number;
-};
-
+export type Point = { x: number; y: number };
 export type GestureMode = "idle" | "draw";
-
-export type GestureResult = {
-  mode: GestureMode;
-  pointer: Point | null;
-};
-
-type Landmark = {
-  x: number;
-  y: number;
-  z?: number;
-};
-
+export type GestureResult = { mode: GestureMode; pointer: Point | null };
+type Landmark = { x: number; y: number; z?: number };
 function isFingerExtended(
   landmarks: Landmark[],
   mcp: number,
@@ -29,7 +15,6 @@ function isFingerExtended(
     landmarks[pip].y < landmarks[mcp].y
   );
 }
-
 export function mapHandToGesture(
   landmarks: Landmark[],
   canvasWidth: number,
@@ -39,9 +24,7 @@ export function mapHandToGesture(
   const middleUp = isFingerExtended(landmarks, 9, 10, 11, 12);
   const ringUp = isFingerExtended(landmarks, 13, 14, 15, 16);
   const pinkUp = isFingerExtended(landmarks, 17, 18, 19, 20);
-
   const drawMode = indexUp && !middleUp && !ringUp && !pinkUp;
-
   if (drawMode) {
     return {
       mode: "draw",
@@ -51,9 +34,5 @@ export function mapHandToGesture(
       },
     };
   }
-
-  return {
-    mode: "idle",
-    pointer: null,
-  };
+  return { mode: "idle", pointer: null };
 }
