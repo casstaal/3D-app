@@ -208,7 +208,14 @@ function drawPointer(
 
   ctx.beginPath();
   ctx.arc(pointer.x, pointer.y, 10, 0, Math.PI * 2);
-  ctx.strokeStyle = mode === "draw" ? "#22c55e" : "#ffffff";
+  // ctx.strokeStyle = mode === "draw" ? "#22c55e" : "#ffffff";
+  if (mode === "draw") {
+    ctx.strokeStyle = "#22c55e";
+  } else if (mode === "rotate") {
+    ctx.strokeStyle = "#f59e0b";
+  } else {
+    ctx.strokeStyle = "#ffffff";
+  }
   ctx.lineWidth = 3;
   ctx.stroke();
 }
