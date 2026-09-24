@@ -5,7 +5,7 @@ export type Point = {
 
 export type DrawingMode = "free" | "shape-detect";
 
-export type GestureMode = "idle" | "draw";
+export type GestureMode = "idle" | "draw" | "rotate";
 
 export type Stroke = {
   type: "stroke";

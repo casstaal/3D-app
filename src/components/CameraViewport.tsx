@@ -71,7 +71,7 @@ export default function CameraViewport() {
 
           {/* Nieuwe echte 3D-laag */}
           <div className="absolute inset-0 z-20">
-            <SceneViewport />
+            <SceneViewport mode={mode} pointer={pointer} />
           </div>
 
           {/* Handtracking blijft altijd bovenop */}
@@ -115,6 +115,10 @@ export default function CameraViewport() {
         >
           Undo
         </button>
+
+        <div className="absolute right-4 top-4 z-40 rounded-xl bg-black/70 px-4 py-2 text-white">
+          Gesture: {mode}
+        </div>
 
         {/* <div className="absolute right-4 top-4 z-30 flex flex-col gap-2">
           <div className="rounded-full bg-black/60 px-3 py-1 text-sm text-white backdrop-blur">

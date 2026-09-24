@@ -4,11 +4,9 @@ import {
   HandLandmarker,
   type HandLandmarkerResult,
 } from "@mediapipe/tasks-vision";
-import {
-  mapHandToGesture,
-  type GestureMode,
-  type Point,
-} from "../features/handTracking/gestureMapper";
+import { mapHandToGesture } from "../features/handTracking/gestureMapper";
+
+import type { GestureMode, Point } from "../features/handTracking/types";
 
 type UseHandTrackingOptions = {
   videoRef: React.RefObject<HTMLVideoElement | null>;
