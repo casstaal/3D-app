@@ -31,6 +31,13 @@ export default function CameraViewport() {
 
   const [finishSignal, setFinishSignal] = useState(0);
 
+  const mirroredPointer = pointer
+    ? {
+        x: (videoRef.current?.videoWidth ?? 1280) - pointer.x,
+        y: pointer.y,
+      }
+    : null;
+
   // const { clear, undo } = useHandDrawing({
   //   drawingCanvasRef,
   //   videoRef,
@@ -66,7 +73,7 @@ export default function CameraViewport() {
             autoPlay
             playsInline
             muted
-            className="absolute inset-0 z-0 h-full w-full object-cover"
+            className="absolute inset-0 z-0 h-full w-full -scale-x-100 object-cover"
           />
 
           {/* Bestaande 2D tekening - voorlopig behouden */}
@@ -79,7 +86,7 @@ export default function CameraViewport() {
           <div className="absolute inset-0 z-20">
             <SceneViewport
               mode={mode}
-              pointer={pointer}
+              pointer={mirroredPointer}
               viewportWidth={videoRef.current?.videoWidth ?? 1280}
               viewportHeight={videoRef.current?.videoHeight ?? 720}
               sketches={sketches}
@@ -91,7 +98,7 @@ export default function CameraViewport() {
           {/* Handtracking blijft altijd bovenop */}
           <canvas
             ref={overlayCanvasRef}
-            className="pointer-events-none absolute inset-0 z-30 h-full w-full"
+            className="pointer-events-none absolute inset-0 z-30 h-full w-full -scale-x-100"
           />
         </div>
 
