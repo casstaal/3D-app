@@ -48,9 +48,9 @@ export default function CameraViewport() {
   // });
 
   return (
-    <div className="w-full p-6">
-      <div className="mx-auto w-full max-w-6xl">
-        <div className="relative aspect-video h-[500px] w-full overflow-hidden rounded-3xl bg-zinc-900 shadow-2xl">
+    <div className="w-full">
+      <div className="mx-auto w-full">
+        <div className="relative aspect-video w-full overflow-hidden bg-zinc-900 shadow-2xl">
           {/* <video
             ref={videoRef}
             autoPlay
