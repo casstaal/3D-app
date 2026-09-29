@@ -48,67 +48,48 @@ export default function CameraViewport() {
   // });
 
   return (
-    <div className="w-full">
-      <div className="mx-auto w-full">
-        <div className="relative aspect-video w-full overflow-hidden bg-zinc-900 shadow-2xl">
-          {/* <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            className="absolute inset-0 z-0 h-full w-full object-cover"
-          />
+    <div className="relative h-full w-full overflow-hidden bg-black">
+      {/* Webcam */}
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        muted
+        className="
+          absolute inset-0 z-0
+          h-full w-full
+          -scale-x-100
+          object-cover
+        "
+      />
 
-          <canvas
-            ref={drawingCanvasRef}
-            className="pointer-events-none absolute inset-0 z-10 h-full w-full"
-          />
-
-          <canvas
-            ref={overlayCanvasRef}
-            className="pointer-events-none absolute inset-0 z-20 h-full w-full"
-          /> */}
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            className="absolute inset-0 z-0 h-full w-full -scale-x-100 object-cover"
-          />
-
-          {/* Bestaande 2D tekening - voorlopig behouden */}
-          {/* <canvas
-            ref={drawingCanvasRef}
-            className="pointer-events-none absolute inset-0 z-10 h-full w-full"
-          /> */}
-
-          {/* Nieuwe echte 3D-laag */}
-          <div className="absolute inset-0 z-20">
-            <SceneViewport
-              mode={mode}
-              pointer={mirroredPointer}
-              viewportWidth={videoRef.current?.videoWidth ?? 1280}
-              viewportHeight={videoRef.current?.videoHeight ?? 720}
-              sketches={sketches}
-              finishSignal={finishSignal}
-              onFinishSketch={addSketch}
-            />
-          </div>
-
-          {/* Handtracking blijft altijd bovenop */}
-          <canvas
-            ref={overlayCanvasRef}
-            className="pointer-events-none absolute inset-0 z-30 h-full w-full -scale-x-100"
-          />
-        </div>
-
-        {error && (
-          <div className="mt-4 rounded-2xl bg-red-500/20 p-3 text-sm text-red-100">
-            {error}
-          </div>
-        )}
+      {/* Three.js */}
+      <div className="absolute inset-0 z-20">
+        <SceneViewport
+          mode={mode}
+          drawingMode={drawingMode}
+          pointer={mirroredPointer}
+          viewportWidth={videoRef.current?.videoWidth ?? 1280}
+          viewportHeight={videoRef.current?.videoHeight ?? 720}
+          sketches={sketches}
+          finishSignal={finishSignal}
+          onFinishSketch={addSketch}
+        />
       </div>
-      <div className="absolute left-4 top-4 z-30 flex gap-2">
+
+      {/* MediaPipe handtracking */}
+      <canvas
+        ref={overlayCanvasRef}
+        className="
+          pointer-events-none
+          absolute inset-0 z-30
+          h-full w-full
+          -scale-x-100
+        "
+      />
+
+      {/* Bovenste knoppen */}
+      <div className="absolute left-4 top-4 z-50 flex gap-2">
         <button
           onClick={() => void startCamera()}
           className="rounded-xl bg-white/10 px-4 py-2 text-sm font-medium text-white backdrop-blur hover:bg-white/20"
@@ -143,46 +124,10 @@ export default function CameraViewport() {
         >
           Undo
         </button>
-        {/* <button
-          onClick={clear}
-          className="rounded-xl bg-white/10 px-4 py-2 text-sm font-medium text-white backdrop-blur hover:bg-white/20"
-        >
-          Clear
-        </button>
-
-        <button
-          onClick={undo}
-          className="rounded-xl bg-white/10 px-4 py-2 text-sm font-medium text-white backdrop-blur hover:bg-white/20"
-        >
-          Undo
-        </button>
-
-        <div className="absolute right-4 top-4 z-40 rounded-xl bg-black/70 px-4 py-2 text-white">
-          Gesture: {mode}
-        </div> */}
-
-        {/* <div className="absolute right-4 top-4 z-30 flex flex-col gap-2">
-          <div className="rounded-full bg-black/60 px-3 py-1 text-sm text-white backdrop-blur">
-            {isLoading
-              ? "Camera starten..."
-              : isActive
-                ? "Camera actief"
-                : "Camera uit"}
-          </div>
-
-          <div className="rounded-full bg-black/60 px-3 py-1 text-sm text-white backdrop-blur">
-            Draw mode: {mode === "draw" ? "aan" : "uit"}
-          </div>
-
-          <div className="rounded-full bg-black/60 px-3 py-1 text-sm text-white backdrop-blur">
-            Pointer:{" "}
-            {pointer
-              ? `${Math.round(pointer.x)}, ${Math.round(pointer.y)}`
-              : "geen"}
-          </div>
-        </div> */}
       </div>
-      <div className="absolute left-4 top-16 z-30 flex gap-2">
+
+      {/* Drawing mode knoppen */}
+      <div className="absolute left-4 top-16 z-50 flex gap-2">
         <button
           onClick={() => setDrawingMode("free")}
           className={`rounded-xl px-4 py-2 text-sm font-medium text-white backdrop-blur ${
@@ -204,6 +149,28 @@ export default function CameraViewport() {
         >
           Shape detect
         </button>
+      </div>
+
+      {/* Camera error */}
+      {error && (
+        <div className="absolute bottom-4 left-4 z-50 rounded-xl bg-red-500/20 p-3 text-sm text-red-100 backdrop-blur">
+          {error}
+        </div>
+      )}
+
+      {/* Status - handig tijdens development */}
+      <div className="absolute right-4 top-4 z-50 flex flex-col gap-2">
+        <div className="rounded-full bg-black/60 px-3 py-1 text-sm text-white backdrop-blur">
+          {isLoading
+            ? "Camera starten..."
+            : isActive
+              ? "Camera actief"
+              : "Camera uit"}
+        </div>
+
+        <div className="rounded-full bg-black/60 px-3 py-1 text-sm text-white backdrop-blur">
+          Gesture: {mode}
+        </div>
       </div>
     </div>
   );

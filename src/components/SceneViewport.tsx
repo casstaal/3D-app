@@ -1,17 +1,24 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
-import type { GestureMode, Point } from "../features/handTracking/types";
+import type {
+  DrawingMode,
+  GestureMode,
+  Point,
+} from "../features/handTracking/types";
 
 import type { Sketch } from "../features/modeling/sketchTypes";
 
 import ActiveSketch from "./scene/ActiveSketch";
 import SavedSketch from "./scene/SavedSketch";
+import HandSelection from "./scene/HandSelection";
 
 type SceneViewportProps = {
   mode: GestureMode;
+  drawingMode: DrawingMode;
+
   pointer: Point | null;
 
   viewportWidth: number;
@@ -26,6 +33,7 @@ type SceneViewportProps = {
 
 export default function SceneViewport({
   mode,
+  drawingMode,
   pointer,
   viewportWidth,
   viewportHeight,
@@ -33,6 +41,46 @@ export default function SceneViewport({
   finishSignal,
   onFinishSketch,
 }: SceneViewportProps) {
+  /*
+   * ALLE hooks moeten binnen SceneViewport staan.
+   */
+  const selectableRoot = useRef<THREE.Group>(null);
+
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const [selectionProgress, setSelectionProgress] = useState(0);
+
+  /*
+   * Escape = deselect.
+   */
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setSelectedId(null);
+        setHoveredId(null);
+        setSelectionProgress(0);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
+  /*
+   * Tijdelijk handig om de 3 seconden hover
+   * te kunnen debuggen.
+   */
+  useEffect(() => {
+    if (selectionProgress > 0) {
+      console.log("Selection:", Math.round(selectionProgress * 100), "%");
+    }
+  }, [selectionProgress]);
+
   return (
     <Canvas
       gl={{
@@ -55,24 +103,23 @@ export default function SceneViewport({
 
       <directionalLight position={[5, 5, 5]} intensity={2} />
 
-      {/* Reeds afgeronde sketches */}
-      {sketches.map((sketch) => (
-        <SavedSketch key={sketch.id} sketch={sketch} />
-      ))}
+      {/* Opgeslagen sketches */}
+      <group ref={selectableRoot}>
+        {sketches.map((sketch) => (
+          <SavedSketch
+            key={sketch.id}
+            sketch={sketch}
+            hoveredId={hoveredId}
+            selectedId={selectedId}
+          />
+        ))}
+      </group>
 
-      {/*
-        De actieve sketch.
-
-        Door key te koppelen aan sketches.length
-        wordt na Finish Sketch een volledig nieuwe
-        ActiveSketch aangemaakt.
-
-        Die nieuwe sketch neemt daardoor de huidige
-        camera-oriëntatie over.
-      */}
+      {/* Huidige actieve sketch */}
       <ActiveSketch
         key={sketches.length}
         mode={mode}
+        drawingMode={drawingMode}
         pointer={pointer}
         viewportWidth={viewportWidth}
         viewportHeight={viewportHeight}
@@ -80,23 +127,29 @@ export default function SceneViewport({
         onFinish={onFinishSketch}
       />
 
-      {/*
-        Hand gesture waarmee we rond de world origin draaien.
-      */}
+      {/* Selectie */}
+      <HandSelection
+        mode={mode}
+        pointer={pointer}
+        viewportWidth={viewportWidth}
+        viewportHeight={viewportHeight}
+        selectableRoot={selectableRoot}
+        selectedId={selectedId}
+        onHoverChange={setHoveredId}
+        onSelectionChange={setSelectedId}
+        onProgressChange={setSelectionProgress}
+      />
+
+      {/* Hand camera rotation */}
       <HandOrbit mode={mode} pointer={pointer} />
 
-      {/*
-        Muisbesturing.
-
-        Heel belangrijk:
-        target is exact hetzelfde middelpunt als HandOrbit.
-      */}
+      {/* Muis camera rotation */}
       <OrbitControls
         enabled={mode !== "rotate"}
         target={[0, 0, 0]}
         enablePan={false}
-        enableZoom={true}
-        enableRotate={true}
+        enableZoom
+        enableRotate
         minDistance={2}
         maxDistance={12}
       />
@@ -112,83 +165,55 @@ type HandOrbitProps = {
 function HandOrbit({ mode, pointer }: HandOrbitProps) {
   const { camera } = useThree();
 
-  /*
-    Het middelpunt waar we ALTIJD omheen draaien.
-  */
   const target = useMemo(() => new THREE.Vector3(0, 0, 0), []);
 
-  /*
-    Vorige handpositie.
-
-    Hiermee bepalen we hoeveel de hand sinds
-    het vorige frame verplaatst is.
-  */
   const lastPointer = useRef<Point | null>(null);
 
-  /*
-    Huidige spherical coordinaten van de camera.
-  */
   const currentTheta = useRef(0);
   const currentPhi = useRef(Math.PI / 2);
+
   const radius = useRef(5);
 
-  /*
-    Waar we naartoe willen bewegen.
-
-    Door current langzaam richting target te bewegen
-    krijgen we de vloeiende beweging.
-  */
   const targetTheta = useRef(0);
   const targetPhi = useRef(Math.PI / 2);
 
-  /*
-    Houd bij of we het vorige frame al in rotate mode waren.
-  */
   const wasRotating = useRef(false);
 
-  /*
-    Zodra rotate begint synchroniseren we onze spherical
-    coordinaten met de WERKELIJKE camerapositie.
-
-    Dit is belangrijk omdat OrbitControls de camera met
-    de muis ook kan hebben verplaatst.
-  */
   useEffect(() => {
     const isRotating = mode === "rotate" && pointer !== null;
 
     if (!isRotating) {
       lastPointer.current = null;
       wasRotating.current = false;
+
       return;
     }
 
-    /*
-      We zijn zojuist begonnen met draaien.
-    */
     if (!wasRotating.current) {
       const offset = camera.position.clone().sub(target);
 
       const spherical = new THREE.Spherical().setFromVector3(offset);
 
       currentTheta.current = spherical.theta;
+
       currentPhi.current = spherical.phi;
 
       targetTheta.current = spherical.theta;
+
       targetPhi.current = spherical.phi;
 
       radius.current = spherical.radius;
 
       lastPointer.current = pointer;
+
       wasRotating.current = true;
 
       return;
     }
 
-    /*
-      Er is nog geen vorige pointer.
-    */
     if (!lastPointer.current) {
       lastPointer.current = pointer;
+
       return;
     }
 
@@ -196,60 +221,26 @@ function HandOrbit({ mode, pointer }: HandOrbitProps) {
 
     const dy = pointer.y - lastPointer.current.y;
 
-    /*
-      Pas dit eventueel later aan.
-
-      Lager = langzamer
-      Hoger = sneller
-    */
     const sensitivity = 0.005;
 
-    /*
-      Horizontale handbeweging
-      -> rond Y-as draaien
-    */
     targetTheta.current -= dx * sensitivity;
 
-    /*
-      Verticale handbeweging
-      -> boven/onder het object bewegen
-    */
     targetPhi.current += dy * sensitivity;
-
-    /*
-      Voorkom dat de camera exact over de
-      bovenste/onderste pool gaat.
-
-      Anders kan de camera plotseling flippen.
-    */
-    const minPhi = 0.15;
-    const maxPhi = Math.PI - 0.15;
 
     targetPhi.current = THREE.MathUtils.clamp(
       targetPhi.current,
-      minPhi,
-      maxPhi,
+      0.15,
+      Math.PI - 0.15,
     );
 
     lastPointer.current = pointer;
   }, [mode, pointer, camera, target]);
 
-  /*
-    Wordt ieder Three.js-frame uitgevoerd.
-
-    Hier maken we de beweging vloeiend.
-  */
   useFrame(() => {
     if (!wasRotating.current) {
       return;
     }
 
-    /*
-      Hoe hoger dit getal,
-      hoe directer de beweging reageert.
-
-      0.10 - 0.15 voelt meestal prettig.
-    */
     const smoothing = 0.12;
 
     currentTheta.current = THREE.MathUtils.lerp(
@@ -272,15 +263,8 @@ function HandOrbit({ mode, pointer }: HandOrbitProps) {
 
     const offset = new THREE.Vector3().setFromSpherical(spherical);
 
-    /*
-      Camera blijft altijd op dezelfde afstand
-      rondom target bewegen.
-    */
     camera.position.copy(target.clone().add(offset));
 
-    /*
-      Camera blijft altijd naar het midden kijken.
-    */
     camera.lookAt(target);
 
     camera.updateMatrixWorld();

@@ -4,7 +4,11 @@ import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import SketchLine from "./SketchLine";
 
-import type { GestureMode, Point } from "../../features/handTracking/types";
+import type {
+  DrawingMode,
+  GestureMode,
+  Point,
+} from "../../features/handTracking/types";
 
 import type {
   Point3D,
@@ -14,6 +18,8 @@ import type {
 
 type ActiveSketchProps = {
   mode: GestureMode;
+  drawingMode: DrawingMode;
+
   pointer: Point | null;
 
   viewportWidth: number;
@@ -26,6 +32,7 @@ type ActiveSketchProps = {
 
 export default function ActiveSketch({
   mode,
+  drawingMode,
   pointer,
   viewportWidth,
   viewportHeight,

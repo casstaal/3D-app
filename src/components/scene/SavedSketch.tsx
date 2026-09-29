@@ -1,30 +1,58 @@
+import { useMemo } from "react";
 import * as THREE from "three";
 
 import type { Sketch } from "../../features/modeling/sketchTypes";
+
 import SketchLine from "./SketchLine";
 
 type SavedSketchProps = {
   sketch: Sketch;
+
+  hoveredId: string | null;
+  selectedId: string | null;
 };
 
-export default function SavedSketch({ sketch }: SavedSketchProps) {
-  const position = new THREE.Vector3(
-    sketch.position.x,
-    sketch.position.y,
-    sketch.position.z,
+export default function SavedSketch({
+  sketch,
+  hoveredId,
+  selectedId,
+}: SavedSketchProps) {
+  const position = useMemo(
+    () =>
+      new THREE.Vector3(
+        sketch.position.x,
+        sketch.position.y,
+        sketch.position.z,
+      ),
+    [sketch.position.x, sketch.position.y, sketch.position.z],
   );
 
-  const quaternion = new THREE.Quaternion(
-    sketch.quaternion.x,
-    sketch.quaternion.y,
-    sketch.quaternion.z,
-    sketch.quaternion.w,
+  const quaternion = useMemo(
+    () =>
+      new THREE.Quaternion(
+        sketch.quaternion.x,
+        sketch.quaternion.y,
+        sketch.quaternion.z,
+        sketch.quaternion.w,
+      ),
+    [
+      sketch.quaternion.x,
+      sketch.quaternion.y,
+      sketch.quaternion.z,
+      sketch.quaternion.w,
+    ],
   );
 
   return (
     <group position={position} quaternion={quaternion}>
       {sketch.strokes.map((stroke) => (
-        <SketchLine key={stroke.id} points={stroke.points} />
+        <SketchLine
+          key={stroke.id}
+          strokeId={stroke.id}
+          points={stroke.points}
+          hovered={hoveredId === stroke.id}
+          selected={selectedId === stroke.id}
+        />
       ))}
     </group>
   );

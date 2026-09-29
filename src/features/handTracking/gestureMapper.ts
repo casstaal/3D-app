@@ -38,6 +38,9 @@ export function mapHandToGesture(
   // Alleen wijsvinger omhoog
   const drawMode = indexUp && !middleUp && !ringUp && !pinkUp;
 
+  // Alleen middelvinger omhoog
+  const selectMode = !indexUp && middleUp && !ringUp && !pinkUp;
+
   // Alle vier vingers dicht
   const rotateMode = !indexUp && !middleUp && !ringUp && !pinkUp;
 
@@ -49,6 +52,17 @@ export function mapHandToGesture(
       pointer: {
         x: landmarks[8].x * canvasWidth,
         y: landmarks[8].y * canvasHeight,
+      },
+    };
+  }
+
+  if (selectMode) {
+    return {
+      mode: "select",
+
+      pointer: {
+        x: landmarks[12].x * canvasWidth,
+        y: landmarks[12].y * canvasHeight,
       },
     };
   }
