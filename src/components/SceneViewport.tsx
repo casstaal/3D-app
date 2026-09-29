@@ -29,6 +29,8 @@ type SceneViewportProps = {
   finishSignal: number;
 
   onFinishSketch: (sketch: Sketch) => void;
+
+  onSelectionProgressChange: (progress: number) => void;
 };
 
 export default function SceneViewport({
@@ -40,6 +42,7 @@ export default function SceneViewport({
   sketches,
   finishSignal,
   onFinishSketch,
+  onSelectionProgressChange,
 }: SceneViewportProps) {
   /*
    * ALLE hooks moeten binnen SceneViewport staan.
@@ -50,8 +53,6 @@ export default function SceneViewport({
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const [selectionProgress, setSelectionProgress] = useState(0);
-
   /*
    * Escape = deselect.
    */
@@ -60,7 +61,6 @@ export default function SceneViewport({
       if (event.key === "Escape") {
         setSelectedId(null);
         setHoveredId(null);
-        setSelectionProgress(0);
       }
     }
 
@@ -70,16 +70,6 @@ export default function SceneViewport({
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
-
-  /*
-   * Tijdelijk handig om de 3 seconden hover
-   * te kunnen debuggen.
-   */
-  useEffect(() => {
-    if (selectionProgress > 0) {
-      console.log("Selection:", Math.round(selectionProgress * 100), "%");
-    }
-  }, [selectionProgress]);
 
   return (
     <Canvas
@@ -137,7 +127,7 @@ export default function SceneViewport({
         selectedId={selectedId}
         onHoverChange={setHoveredId}
         onSelectionChange={setSelectedId}
-        onProgressChange={setSelectionProgress}
+        onProgressChange={onSelectionProgressChange}
       />
 
       {/* Hand camera rotation */}

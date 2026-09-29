@@ -24,6 +24,11 @@ export default function SketchLine({
 }: SketchLineProps) {
   const { size } = useThree();
 
+  const lineColor = selected ? "#3b82f6" : hovered ? "#ca0bf5" : "#22c55e";
+
+  /*
+   * De daadwerkelijke zichtbare lijn.
+   */
   const visibleLine = useMemo(() => {
     const positions = points.flatMap((point) => [point.x, point.y, 0.01]);
 
@@ -32,7 +37,7 @@ export default function SketchLine({
     geometry.setPositions(positions);
 
     const material = new LineMaterial({
-      color: "#22c55e",
+      color: lineColor,
       linewidth: 4,
       worldUnits: false,
     });
@@ -44,11 +49,8 @@ export default function SketchLine({
     line.computeLineDistances();
 
     return line;
-  }, [points]);
+  }, [points, lineColor]);
 
-  /*
-   * Onzichtbare, brede lijn voor selectie.
-   */
   const hitLine = useMemo(() => {
     const positions = points.flatMap((point) => [point.x, point.y, 0.01]);
 
@@ -58,11 +60,8 @@ export default function SketchLine({
 
     const material = new LineMaterial({
       color: "#ffffff",
-
-      linewidth: 15,
-
+      linewidth: 30,
       worldUnits: false,
-
       transparent: true,
       opacity: 0,
       depthWrite: false,
@@ -72,7 +71,6 @@ export default function SketchLine({
 
     if (strokeId) {
       line.userData.strokeId = strokeId;
-
       line.userData.selectable = true;
     }
 
@@ -88,16 +86,6 @@ export default function SketchLine({
   }, [visibleLine, hitLine, size.width, size.height]);
 
   useEffect(() => {
-    if (selected) {
-      visibleLine.material.color.set("#3b82f6");
-    } else if (hovered) {
-      visibleLine.material.color.set("#ca0bf5");
-    } else {
-      visibleLine.material.color.set("#22c55e");
-    }
-  }, [visibleLine, selected, hovered]);
-
-  useEffect(() => {
     return () => {
       visibleLine.geometry.dispose();
       visibleLine.material.dispose();
@@ -109,8 +97,10 @@ export default function SketchLine({
 
   return (
     <>
+      {/* Wat de gebruiker daadwerkelijk ziet */}
       <primitive object={visibleLine} />
 
+      {/* Onzichtbaar groter selectiegebied */}
       <primitive object={hitLine} />
     </>
   );

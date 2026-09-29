@@ -1,7 +1,6 @@
 import { useState, useRef } from "react";
 import { useCamera } from "../hooks/useCamera";
 import { useHandTracking } from "../hooks/useHandTracking";
-// import { useHandDrawing } from "../hooks/useHandDrawing";
 import type { DrawingMode } from "../features/handTracking/types";
 import SceneViewport from "./SceneViewport";
 import { useSketchStore } from "../features/modeling/sketchStore";
@@ -16,8 +15,8 @@ export default function CameraViewport() {
     });
 
   const [drawingMode, setDrawingMode] = useState<DrawingMode>("free");
+  const [selectionProgress, setSelectionProgress] = useState(0);
 
-  // const drawingCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const { mode, pointer } = useHandTracking({
@@ -74,6 +73,7 @@ export default function CameraViewport() {
           sketches={sketches}
           finishSignal={finishSignal}
           onFinishSketch={addSketch}
+          onSelectionProgressChange={setSelectionProgress}
         />
       </div>
 
