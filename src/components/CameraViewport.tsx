@@ -15,6 +15,7 @@ export default function CameraViewport() {
     });
 
   const [drawingMode, setDrawingMode] = useState<DrawingMode>("free");
+
   const [selectionProgress, setSelectionProgress] = useState(0);
 
   const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -23,6 +24,7 @@ export default function CameraViewport() {
     videoRef,
     overlayCanvasRef,
     enabled: isActive,
+    selectionProgress,
   });
 
   const { sketches, addSketch, clearSketches, removeLastSketch } =
@@ -36,15 +38,6 @@ export default function CameraViewport() {
         y: pointer.y,
       }
     : null;
-
-  // const { clear, undo } = useHandDrawing({
-  //   drawingCanvasRef,
-  //   videoRef,
-  //   enabled: isActive,
-  //   mode,
-  //   pointer,
-  //   drawingMode,
-  // });
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-black">
@@ -158,7 +151,7 @@ export default function CameraViewport() {
         </div>
       )}
 
-      {/* Status - handig tijdens development */}
+      {/* Development status */}
       <div className="absolute right-4 top-4 z-50 flex flex-col gap-2">
         <div className="rounded-full bg-black/60 px-3 py-1 text-sm text-white backdrop-blur">
           {isLoading

@@ -20,15 +20,11 @@ export default function SketchLine({
   points,
   strokeId,
   selected = false,
-  hovered = false,
 }: SketchLineProps) {
   const { size } = useThree();
 
-  const lineColor = selected ? "#3b82f6" : hovered ? "#ca0bf5" : "#22c55e";
+  const lineColor = selected ? "#3b82f6" : "#22c55e";
 
-  /*
-   * De daadwerkelijke zichtbare lijn.
-   */
   const visibleLine = useMemo(() => {
     const positions = points.flatMap((point) => [point.x, point.y, 0.01]);
 
