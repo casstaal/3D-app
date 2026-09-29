@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
+import SketchLine from "./SketchLine";
 
 import type { GestureMode, Point } from "../../features/handTracking/types";
 
@@ -380,56 +381,13 @@ export default function ActiveSketch({
         huidige ActiveSketch.
       */}
       {strokes.map((stroke) => (
-        <LocalLine key={stroke.id} points={stroke.points} />
+        <SketchLine key={stroke.id} points={stroke.points} />
       ))}
 
       {/*
         Stroke die NU getekend wordt.
       */}
-      {currentPoints.length > 1 && <LocalLine points={currentPoints} />}
+      {currentPoints.length > 1 && <SketchLine points={currentPoints} />}
     </group>
   );
-}
-
-type LocalLineProps = {
-  points: Point3D[];
-};
-
-function LocalLine({ points }: LocalLineProps) {
-  const line = useMemo(() => {
-    /*
-      Omdat de lijn anders exact in hetzelfde
-      vlak als het sketchplane ligt, geven we
-      hem een héél kleine Z-offset.
-
-      Dat voorkomt z-fighting.
-    */
-    const vectors = points.map(
-      (point) => new THREE.Vector3(point.x, point.y, 0.01),
-    );
-
-    const geometry = new THREE.BufferGeometry().setFromPoints(vectors);
-
-    const material = new THREE.LineBasicMaterial({
-      color: "#22c55e",
-    });
-
-    return new THREE.Line(geometry, material);
-  }, [points]);
-
-  /*
-    Three.js resources opruimen wanneer
-    deze lijn verdwijnt.
-  */
-  useEffect(() => {
-    return () => {
-      line.geometry.dispose();
-
-      if (line.material instanceof THREE.Material) {
-        line.material.dispose();
-      }
-    };
-  }, [line]);
-
-  return <primitive object={line} />;
 }

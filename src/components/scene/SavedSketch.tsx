@@ -1,7 +1,7 @@
-import { useEffect, useMemo } from "react";
 import * as THREE from "three";
 
-import type { Point3D, Sketch } from "../../features/modeling/sketchTypes";
+import type { Sketch } from "../../features/modeling/sketchTypes";
+import SketchLine from "./SketchLine";
 
 type SavedSketchProps = {
   sketch: Sketch;
@@ -28,36 +28,4 @@ export default function SavedSketch({ sketch }: SavedSketchProps) {
       ))}
     </group>
   );
-}
-
-type SketchLineProps = {
-  points: Point3D[];
-};
-
-function SketchLine({ points }: SketchLineProps) {
-  const line = useMemo(() => {
-    const threePoints = points.map(
-      (point) => new THREE.Vector3(point.x, point.y, point.z),
-    );
-
-    const geometry = new THREE.BufferGeometry().setFromPoints(threePoints);
-
-    const material = new THREE.LineBasicMaterial({
-      color: "#22c55e",
-    });
-
-    return new THREE.Line(geometry, material);
-  }, [points]);
-
-  useEffect(() => {
-    return () => {
-      line.geometry.dispose();
-
-      if (line.material instanceof THREE.Material) {
-        line.material.dispose();
-      }
-    };
-  }, [line]);
-
-  return <primitive object={line} />;
 }
