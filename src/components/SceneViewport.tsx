@@ -28,9 +28,12 @@ type SceneViewportProps = {
 
   finishSignal: number;
 
+  deselectSignal: number;
+
   onFinishSketch: (sketch: Sketch) => void;
 
   onSelectionProgressChange: (progress: number) => void;
+  onSelectionStateChange: (isSelected: boolean) => void;
 };
 
 export default function SceneViewport({
@@ -41,8 +44,10 @@ export default function SceneViewport({
   viewportHeight,
   sketches,
   finishSignal,
+  deselectSignal,
   onFinishSketch,
   onSelectionProgressChange,
+  onSelectionStateChange,
 }: SceneViewportProps) {
   /*
    * ALLE hooks moeten binnen SceneViewport staan.
@@ -53,6 +58,10 @@ export default function SceneViewport({
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
+  useEffect(() => {
+    onSelectionStateChange(selectedId !== null);
+  }, [selectedId, onSelectionStateChange]);
+
   /*
    * Escape = deselect.
    */
@@ -61,6 +70,7 @@ export default function SceneViewport({
       if (event.key === "Escape") {
         setSelectedId(null);
         setHoveredId(null);
+        onSelectionProgressChange(0);
       }
     }
 
@@ -69,7 +79,20 @@ export default function SceneViewport({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, []);
+  }, [onSelectionProgressChange]);
+
+  /*
+   * Deselect-knop uit CameraViewport.
+   */
+  useEffect(() => {
+    if (deselectSignal === 0) {
+      return;
+    }
+
+    setSelectedId(null);
+    setHoveredId(null);
+    onSelectionProgressChange(0);
+  }, [deselectSignal, onSelectionProgressChange]);
 
   return (
     <Canvas

@@ -17,6 +17,7 @@ export default function CameraViewport() {
   const [drawingMode, setDrawingMode] = useState<DrawingMode>("free");
 
   const [selectionProgress, setSelectionProgress] = useState(0);
+  const [hasSelection, setHasSelection] = useState(false);
 
   const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -31,6 +32,7 @@ export default function CameraViewport() {
     useSketchStore();
 
   const [finishSignal, setFinishSignal] = useState(0);
+  const [deselectSignal, setDeselectSignal] = useState(0);
 
   const mirroredPointer = pointer
     ? {
@@ -65,8 +67,10 @@ export default function CameraViewport() {
           viewportHeight={videoRef.current?.videoHeight ?? 720}
           sketches={sketches}
           finishSignal={finishSignal}
+          deselectSignal={deselectSignal}
           onFinishSketch={addSketch}
           onSelectionProgressChange={setSelectionProgress}
+          onSelectionStateChange={setHasSelection}
         />
       </div>
 
@@ -164,6 +168,14 @@ export default function CameraViewport() {
         <div className="rounded-full bg-black/60 px-3 py-1 text-sm text-white backdrop-blur">
           Gesture: {mode}
         </div>
+        {hasSelection && (
+          <button
+            onClick={() => setDeselectSignal((current) => current + 1)}
+            className="rounded-xl bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-500"
+          >
+            Deselect
+          </button>
+        )}
       </div>
     </div>
   );
