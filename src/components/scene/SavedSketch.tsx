@@ -48,8 +48,8 @@ export default function SavedSketch({
       {sketch.strokes.map((stroke) => (
         <SketchLine
           key={stroke.id}
+          stroke={stroke}
           strokeId={stroke.id}
-          points={stroke.points}
           hovered={hoveredId === stroke.id}
           selected={selectedId === stroke.id}
         />

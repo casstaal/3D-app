@@ -4,10 +4,42 @@ export type Point3D = {
   z: number;
 };
 
-export type SketchStroke = {
+export type FreeStroke = {
   id: string;
+  type: "free";
   points: Point3D[];
 };
+
+export type LineStroke = {
+  id: string;
+  type: "line";
+  start: Point3D;
+  end: Point3D;
+};
+
+export type CircleStroke = {
+  id: string;
+  type: "circle";
+  center: Point3D;
+  radius: number;
+};
+
+export type RectangleStroke = {
+  id: string;
+  type: "rectangle";
+
+  x: number;
+  y: number;
+
+  width: number;
+  height: number;
+};
+
+export type SketchStroke =
+  | FreeStroke
+  | LineStroke
+  | CircleStroke
+  | RectangleStroke;
 
 export type Sketch = {
   id: string;

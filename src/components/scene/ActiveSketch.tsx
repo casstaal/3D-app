@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useThree } from "@react-three/fiber";
+
 import * as THREE from "three";
+
 import SketchLine from "./SketchLine";
 
 import type {
@@ -14,10 +16,14 @@ import type {
   Point3D,
   Sketch,
   SketchStroke,
+  FreeStroke,
 } from "../../features/modeling/sketchTypes";
+
+import { detectShapeFromStroke } from "../../features/modeling/shapeBuilder";
 
 type ActiveSketchProps = {
   mode: GestureMode;
+
   drawingMode: DrawingMode;
 
   pointer: Point | null;
@@ -41,18 +47,8 @@ export default function ActiveSketch({
 }: ActiveSketchProps) {
   const { camera } = useThree();
 
-  /*
-    Het daadwerkelijke onzichtbare vlak waarop
-    de raycaster de vinger projecteert.
-  */
   const planeRef = useRef<THREE.Mesh>(null);
 
-  /*
-    De gehele sketch.
-
-    Alle punten worden lokaal ten opzichte
-    van deze group opgeslagen.
-  */
   const groupRef = useRef<THREE.Group>(null);
 
   const raycaster = useMemo(() => new THREE.Raycaster(), []);
@@ -60,44 +56,31 @@ export default function ActiveSketch({
   const ndcPointer = useMemo(() => new THREE.Vector2(), []);
 
   /*
-    Reeds afgeronde strokes binnen
-    de huidige actieve sketch.
-  */
+   * Voltooide strokes binnen de
+   * huidige sketch.
+   */
   const [strokes, setStrokes] = useState<SketchStroke[]>([]);
 
   /*
-    Stroke die op dit moment wordt getekend.
-  */
+   * Punten van de stroke die op dit
+   * moment wordt getekend.
+   */
   const [currentPoints, setCurrentPoints] = useState<Point3D[]>([]);
 
   const wasDrawingRef = useRef(false);
 
   /*
-    Heel belangrijk:
-
-    De positie en rotatie van deze ActiveSketch
-    worden EENMALIG bepaald wanneer het component
-    wordt aangemaakt.
-
-    Daarna veranderen ze niet meer wanneer
-    de camera beweegt.
-  */
+   * De positie/oriëntatie van het
+   * sketchvlak wordt één keer opgeslagen.
+   */
   const initialTransform = useRef<{
     position: THREE.Vector3;
     quaternion: THREE.Quaternion;
   } | null>(null);
 
   if (!initialTransform.current) {
-    /*
-      Alle sketches worden rond dezelfde
-      world origin geplaatst.
-    */
     const position = new THREE.Vector3(0, 0, 0);
 
-    /*
-      De sketch kijkt bij het aanmaken
-      dezelfde kant op als de camera.
-    */
     const quaternion = camera.quaternion.clone();
 
     initialTransform.current = {
@@ -109,26 +92,18 @@ export default function ActiveSketch({
   const transform = initialTransform.current;
 
   /*
-   * POINTER
-   *   ↓
-   * NDC
-   *   ↓
-   * RAY
-   *   ↓
-   * SKETCH PLANE
-   *   ↓
-   * LOCAL 3D POINT
+   * Hand tekenen.
    */
   useEffect(() => {
     const isDrawing =
       mode === "draw" && pointer !== null && planeRef.current !== null;
 
     /*
-      We waren aan het tekenen,
-      maar nu niet meer.
-
-      Daarmee eindigt de huidige stroke.
-    */
+     * We waren aan het tekenen,
+     * maar de draw gesture is gestopt.
+     *
+     * → stroke afronden.
+     */
     if (!isDrawing) {
       if (wasDrawingRef.current) {
         finishCurrentStroke();
@@ -143,82 +118,58 @@ export default function ActiveSketch({
       return;
     }
 
-    /*
-      Controle tegen delen door 0.
-    */
     if (viewportWidth <= 0 || viewportHeight <= 0) {
       return;
     }
 
     /*
-      MediaPipe geeft pixels:
-
-      0 ---------------- width
-      |
-      |
-      |
-      height
-
-      Three.js raycasting verwacht NDC:
-
-              +1
-               |
-        -1 ----+---- +1
-               |
-              -1
-    */
+     * Screen coordinates
+     * →
+     * Three.js Normalized Device Coordinates.
+     */
     ndcPointer.set(
       (pointer.x / viewportWidth) * 2 - 1,
 
       -(pointer.y / viewportHeight) * 2 + 1,
     );
 
-    /*
-      Maak vanuit de Three.js-camera
-      een ray door de vingerpositie.
-    */
     raycaster.setFromCamera(ndcPointer, camera);
 
     /*
-      Zoek waar de ray ons sketchvlak raakt.
-    */
+     * Waar raakt de ray ons
+     * huidige sketchvlak?
+     */
     const intersections = raycaster.intersectObject(planeRef.current, false);
 
-    /*
-      Geen intersection betekent:
-      vinger/ray raakt het tekenvlak niet.
-    */
     if (intersections.length === 0) {
       return;
     }
 
-    /*
-      Raycaster geeft world coordinates.
-    */
     const worldPoint = intersections[0].point.clone();
 
     /*
-      Wij willen de punten NIET in world
-      coordinates opslaan.
-
-      We zetten ze om naar lokale coordinaten
-      van deze specifieke sketch.
-    */
+     * Heel belangrijk:
+     *
+     * world space
+     * →
+     * lokale 2D sketch space.
+     */
     const localPoint = groupRef.current.worldToLocal(worldPoint);
 
-    /*
-      Omdat dit een plat sketchvlak is,
-      forceren we z naar 0.
-    */
     const point: Point3D = {
       x: localPoint.x,
       y: localPoint.y,
+
+      /*
+       * Binnen het sketchvlak
+       * blijft z altijd 0.
+       */
       z: 0,
     };
 
     /*
-      Eerste punt van een nieuwe stroke.
-    */
+     * Nieuwe stroke beginnen.
+     */
     if (!wasDrawingRef.current) {
       setCurrentPoints([point]);
 
@@ -228,8 +179,8 @@ export default function ActiveSketch({
     }
 
     /*
-      Volgende punten.
-    */
+     * Punt toevoegen.
+     */
     setCurrentPoints((current) => {
       const last = current[current.length - 1];
 
@@ -244,11 +195,9 @@ export default function ActiveSketch({
       const distance = Math.sqrt(dx * dx + dy * dy);
 
       /*
-        Kleine bewegingen negeren.
-
-        Dit voorkomt enorme aantallen punten
-        door handtracking-jitter.
-      */
+       * Niet duizenden punten opslaan
+       * als de hand nauwelijks beweegt.
+       */
       if (distance < 0.02) {
         return current;
       }
@@ -265,17 +214,31 @@ export default function ActiveSketch({
     ndcPointer,
   ]);
 
-  /*
-    Huidige stroke opslaan in strokes.
-  */
+  function buildStroke(points: Point3D[]): SketchStroke | null {
+    if (points.length <= 1) {
+      return null;
+    }
+
+    const freeStroke: FreeStroke = {
+      id: crypto.randomUUID(),
+
+      type: "free",
+
+      points,
+    };
+
+    if (drawingMode === "free") {
+      return freeStroke;
+    }
+
+    return detectShapeFromStroke(freeStroke);
+  }
+
   function finishCurrentStroke() {
     setCurrentPoints((current) => {
-      if (current.length > 1) {
-        const stroke: SketchStroke = {
-          id: crypto.randomUUID(),
-          points: current,
-        };
+      const stroke = buildStroke(current);
 
+      if (stroke) {
         setStrokes((previous) => [...previous, stroke]);
       }
 
@@ -284,10 +247,7 @@ export default function ActiveSketch({
   }
 
   /*
-   * FINISH SKETCH
-   *
-   * Wordt uitgevoerd wanneer je op
-   * "Finish Sketch" drukt.
+   * Finish Sketch button.
    */
   useEffect(() => {
     if (finishSignal === 0) {
@@ -297,30 +257,22 @@ export default function ActiveSketch({
     let finalStrokes = [...strokes];
 
     /*
-      Als de gebruiker op Finish drukt
-      terwijl hij nog een stroke heeft,
-      nemen we die ook mee.
-    */
+     * Als de gebruiker nog aan het tekenen
+     * was terwijl Finish Sketch wordt
+     * ingedrukt, nemen we die stroke ook mee.
+     */
     if (currentPoints.length > 1) {
-      finalStrokes = [
-        ...finalStrokes,
-        {
-          id: crypto.randomUUID(),
-          points: currentPoints,
-        },
-      ];
+      const finalCurrentStroke = buildStroke(currentPoints);
+
+      if (finalCurrentStroke) {
+        finalStrokes = [...finalStrokes, finalCurrentStroke];
+      }
     }
 
-    /*
-      Lege sketch niet opslaan.
-    */
     if (finalStrokes.length === 0) {
       return;
     }
 
-    /*
-      Maak het definitieve Sketch-object.
-    */
     const sketch: Sketch = {
       id: crypto.randomUUID(),
 
@@ -340,17 +292,11 @@ export default function ActiveSketch({
       strokes: finalStrokes,
     };
 
-    /*
-      Geef hem terug aan CameraViewport/store.
-    */
     onFinish(sketch);
 
     /*
-      ActiveSketch leegmaken.
-
-      Door key={sketches.length} wordt dit
-      component hierna bovendien opnieuw gemount.
-    */
+     * Nieuwe lege sketch beginnen.
+     */
     setStrokes([]);
     setCurrentPoints([]);
 
@@ -364,14 +310,8 @@ export default function ActiveSketch({
       quaternion={transform.quaternion}
     >
       {/*
-        ONZICHTBAAR SKETCHVLAK
-
-        Dit vlak blijft bestaan zodat de
-        Raycaster ertegenaan kan schieten.
-
-        opacity=0 betekent alleen dat de
-        gebruiker hem niet ziet.
-      */}
+       * Onzichtbaar tekenvlak.
+       */}
       <mesh ref={planeRef}>
         <planeGeometry args={[6, 4]} />
 
@@ -384,17 +324,33 @@ export default function ActiveSketch({
       </mesh>
 
       {/*
-        Afgeronde strokes van de
-        huidige ActiveSketch.
-      */}
+       * Reeds afgeronde strokes.
+       *
+       * Deze kunnen nu free/line/
+       * circle/rectangle zijn.
+       */}
       {strokes.map((stroke) => (
-        <SketchLine key={stroke.id} points={stroke.points} />
+        <SketchLine key={stroke.id} stroke={stroke} />
       ))}
 
       {/*
-        Stroke die NU getekend wordt.
-      */}
-      {currentPoints.length > 1 && <SketchLine points={currentPoints} />}
+       * Tijdens het tekenen laten we
+       * gewoon de ruwe handlijn zien.
+       *
+       * Pas bij loslaten wordt hij
+       * eventueel een perfecte shape.
+       */}
+      {currentPoints.length > 1 && (
+        <SketchLine
+          stroke={{
+            id: "current-stroke",
+
+            type: "free",
+
+            points: currentPoints,
+          }}
+        />
+      )}
     </group>
   );
 }
