@@ -23,6 +23,7 @@ type UseHandTrackingOptions = {
 type UseHandTrackingResult = {
   mode: GestureMode;
   pointer: Point | null;
+  secondPointer: Point | null;
 };
 
 export function useHandTracking({
@@ -42,6 +43,7 @@ export function useHandTracking({
   const [mode, setMode] = useState<GestureMode>("idle");
 
   const [pointer, setPointer] = useState<Point | null>(null);
+  const [secondPointer, setSecondPointer] = useState<Point | null>(null);
 
   useEffect(() => {
     selectionProgressRef.current = selectionProgress;
@@ -109,6 +111,7 @@ export function useHandTracking({
 
       setMode("idle");
       setPointer(null);
+      setSecondPointer(null);
 
       lastVideoTimeRef.current = -1;
 
@@ -149,20 +152,22 @@ export function useHandTracking({
 
         drawResults(canvas, results);
 
-        const firstHand = results.landmarks[0];
-
-        if (firstHand) {
+        if (results.landmarks.length > 0) {
           const gesture = mapHandToGesture(
-            firstHand,
+            results.landmarks,
             canvas.width,
             canvas.height,
           );
 
           setMode(gesture.mode);
-
           setPointer(gesture.pointer);
+          setSecondPointer(gesture.secondPointer ?? null);
 
           drawPointer(canvas, gesture.pointer, gesture.mode);
+
+          if (gesture.secondPointer) {
+            drawPointer(canvas, gesture.secondPointer, gesture.mode);
+          }
 
           if (
             gesture.mode === "select" &&
@@ -178,6 +183,7 @@ export function useHandTracking({
         } else {
           setMode("idle");
           setPointer(null);
+          setSecondPointer(null);
         }
       }
 
@@ -198,6 +204,7 @@ export function useHandTracking({
   return {
     mode,
     pointer,
+    secondPointer,
   };
 }
 
@@ -252,6 +259,8 @@ function drawPointer(
     ctx.strokeStyle = "#f59e0b";
   } else if (mode === "select") {
     ctx.strokeStyle = "#a855f7";
+  } else if (mode === "resize") {
+    ctx.strokeStyle = "#ef4444";
   } else {
     ctx.strokeStyle = "#ffffff";
   }

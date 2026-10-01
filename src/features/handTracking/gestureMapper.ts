@@ -3,6 +3,7 @@ import type { GestureMode, Point } from "./types";
 export type GestureResult = {
   mode: GestureMode;
   pointer: Point | null;
+  secondPointer?: Point | null;
 };
 
 type Landmark = {
@@ -25,11 +26,45 @@ function isFingerExtended(
   );
 }
 
+function isIndexOnly(landmarks: Landmark[]) {
+  const indexUp = isFingerExtended(landmarks, 5, 6, 7, 8);
+  const middleUp = isFingerExtended(landmarks, 9, 10, 11, 12);
+  const ringUp = isFingerExtended(landmarks, 13, 14, 15, 16);
+  const pinkUp = isFingerExtended(landmarks, 17, 18, 19, 20);
+
+  return indexUp && !middleUp && !ringUp && !pinkUp;
+}
+
 export function mapHandToGesture(
-  landmarks: Landmark[],
+  hands: Landmark[][],
   canvasWidth: number,
   canvasHeight: number,
 ): GestureResult {
+  if (hands.length === 2 && isIndexOnly(hands[0]) && isIndexOnly(hands[1])) {
+    return {
+      mode: "resize",
+
+      pointer: {
+        x: hands[0][8].x * canvasWidth,
+        y: hands[0][8].y * canvasHeight,
+      },
+
+      secondPointer: {
+        x: hands[1][8].x * canvasWidth,
+        y: hands[1][8].y * canvasHeight,
+      },
+    };
+  }
+
+  if (hands.length === 0) {
+    return {
+      mode: "idle",
+      pointer: null,
+    };
+  }
+
+  const landmarks = hands[0];
+
   const indexUp = isFingerExtended(landmarks, 5, 6, 7, 8);
   const middleUp = isFingerExtended(landmarks, 9, 10, 11, 12);
   const ringUp = isFingerExtended(landmarks, 13, 14, 15, 16);
@@ -48,7 +83,6 @@ export function mapHandToGesture(
     return {
       mode: "draw",
 
-      // Wijsvingertop
       pointer: {
         x: landmarks[8].x * canvasWidth,
         y: landmarks[8].y * canvasHeight,
@@ -71,7 +105,6 @@ export function mapHandToGesture(
     return {
       mode: "rotate",
 
-      // Basis van middelvinger is stabieler voor rotatie
       pointer: {
         x: landmarks[9].x * canvasWidth,
         y: landmarks[9].y * canvasHeight,

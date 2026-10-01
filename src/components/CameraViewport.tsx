@@ -21,7 +21,7 @@ export default function CameraViewport() {
 
   const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  const { mode, pointer } = useHandTracking({
+  const { mode, pointer, secondPointer } = useHandTracking({
     videoRef,
     overlayCanvasRef,
     enabled: isActive,
