@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+
 import type { Sketch, SketchStroke } from "./sketchTypes";
 
 export function useSketchStore() {
@@ -17,29 +18,58 @@ export function useSketchStore() {
   }, []);
 
   const updateStroke = useCallback(
-    (strokeId: string, updater: (stroke: SketchStroke) => SketchStroke) => {
+    (
+      strokeId: string,
+
+      updater: (stroke: SketchStroke) => SketchStroke,
+    ) => {
       setSketches((currentSketches) =>
-        currentSketches.map((sketch) => {
-          const containsStroke = sketch.strokes.some(
-            (stroke) => stroke.id === strokeId,
-          );
+        currentSketches.map((sketch) => ({
+          ...sketch,
 
-          if (!containsStroke) {
-            return sketch;
-          }
+          strokes: sketch.strokes.map((stroke) =>
+            stroke.id === strokeId ? updater(stroke) : stroke,
+          ),
+        })),
+      );
+    },
+    [],
+  );
 
-          return {
-            ...sketch,
+  const extrudeStroke = useCallback(
+    (
+      strokeId: string,
 
-            strokes: sketch.strokes.map((stroke) => {
-              if (stroke.id !== strokeId) {
-                return stroke;
-              }
+      depth: number,
+    ) => {
+      setSketches((currentSketches) =>
+        currentSketches.map((sketch) => ({
+          ...sketch,
 
-              return updater(stroke);
-            }),
-          };
-        }),
+          strokes: sketch.strokes.map((stroke) => {
+            if (stroke.id !== strokeId) {
+              return stroke;
+            }
+
+            if (stroke.type === "rectangle") {
+              return {
+                ...stroke,
+
+                depth: Math.max(0, depth),
+              };
+            }
+
+            if (stroke.type === "circle") {
+              return {
+                ...stroke,
+
+                depth: Math.max(0, depth),
+              };
+            }
+
+            return stroke;
+          }),
+        })),
       );
     },
     [],
@@ -47,9 +77,15 @@ export function useSketchStore() {
 
   return {
     sketches,
+
     addSketch,
+
     clearSketches,
+
     removeLastSketch,
+
     updateStroke,
+
+    extrudeStroke,
   };
 }

@@ -1,14 +1,16 @@
 import { useMemo } from "react";
+
 import * as THREE from "three";
 
 import type { Sketch } from "../../features/modeling/sketchTypes";
 
-import SketchLine from "./SketchLine";
+import ShapeRenderer from "./ShapeRenderer";
 
 type SavedSketchProps = {
   sketch: Sketch;
 
   hoveredId: string | null;
+
   selectedId: string | null;
 };
 
@@ -45,13 +47,12 @@ export default function SavedSketch({
 
   return (
     <group position={position} quaternion={quaternion}>
-      {sketch.strokes.map((stroke) => (
-        <SketchLine
-          key={stroke.id}
-          stroke={stroke}
-          strokeId={stroke.id}
-          hovered={hoveredId === stroke.id}
-          selected={selectedId === stroke.id}
+      {sketch.strokes.map((shape) => (
+        <ShapeRenderer
+          key={shape.id}
+          shape={shape}
+          hovered={hoveredId === shape.id}
+          selected={selectedId === shape.id}
         />
       ))}
     </group>

@@ -3,9 +3,7 @@ import { useEffect, useMemo } from "react";
 import { useThree } from "@react-three/fiber";
 
 import { Line2 } from "three/addons/lines/Line2.js";
-
 import { LineGeometry } from "three/addons/lines/LineGeometry.js";
-
 import { LineMaterial } from "three/addons/lines/LineMaterial.js";
 
 import type {
@@ -31,21 +29,21 @@ export default function SketchLine({
 }: SketchLineProps) {
   const { size } = useThree();
 
-  /*
-   * Zet iedere soort shape om naar punten
-   * die Line2 kan tekenen.
-   */
   const points = useMemo(() => getPointsFromStroke(stroke), [stroke]);
 
-  /*
-   * selected heeft prioriteit
-   * boven hovered.
-   */
   const lineColor = selected ? "#3b82f6" : hovered ? "#ca0bf5" : "#22c55e";
 
-  /*
-   * Zichtbare lijn.
-   */
+  const geometryKey = useMemo(
+    () =>
+      points
+        .map(
+          (point) =>
+            `${point.x.toFixed(4)},${point.y.toFixed(4)},${point.z.toFixed(4)}`,
+        )
+        .join("|"),
+    [points],
+  );
+
   const visibleLine = useMemo(() => {
     const positions = points.flatMap((point) => [point.x, point.y, 0.01]);
 
@@ -68,12 +66,8 @@ export default function SketchLine({
     line.computeLineDistances();
 
     return line;
-  }, [points, lineColor]);
+  }, [geometryKey, lineColor]);
 
-  /*
-   * Brede onzichtbare lijn voor
-   * makkelijkere selectie.
-   */
   const hitLine = useMemo(() => {
     const positions = points.flatMap((point) => [point.x, point.y, 0.01]);
 
@@ -106,71 +100,52 @@ export default function SketchLine({
     line.computeLineDistances();
 
     return line;
-  }, [points, strokeId]);
+  }, [geometryKey, strokeId]);
 
-  /*
-   * LineMaterial heeft de schermresolutie
-   * nodig voor linewidth in pixels.
-   */
   useEffect(() => {
     visibleLine.material.resolution.set(size.width, size.height);
 
     hitLine.material.resolution.set(size.width, size.height);
   }, [visibleLine, hitLine, size.width, size.height]);
 
-  /*
-   * Three.js resources opruimen.
-   */
   useEffect(() => {
     return () => {
       visibleLine.geometry.dispose();
-
       visibleLine.material.dispose();
+    };
+  }, [visibleLine]);
 
+  useEffect(() => {
+    return () => {
       hitLine.geometry.dispose();
-
       hitLine.material.dispose();
     };
-  }, [visibleLine, hitLine]);
+  }, [hitLine]);
 
   return (
     <>
-      <primitive object={visibleLine} />
+      <primitive
+        key={`visible-${geometryKey}-${lineColor}`}
+        object={visibleLine}
+      />
 
-      <primitive object={hitLine} />
+      <primitive key={`hit-${geometryKey}`} object={hitLine} />
     </>
   );
 }
 
-/*
- * Zet een SketchStroke om naar
- * punten voor rendering.
- */
 function getPointsFromStroke(stroke: SketchStroke): Point3D[] {
-  /*
-   * FREE DRAW
-   */
   if (stroke.type === "free") {
     return stroke.points;
   }
 
-  /*
-   * PERFECTE LIJN
-   */
   if (stroke.type === "line") {
     return [stroke.start, stroke.end];
   }
 
-  /*
-   * PERFECTE CIRKEL
-   */
   if (stroke.type === "circle") {
     const points: Point3D[] = [];
 
-    /*
-     * 64 segmenten geeft een
-     * mooi gladde cirkel.
-     */
     const segments = 64;
 
     for (let index = 0; index <= segments; index++) {
@@ -188,27 +163,25 @@ function getPointsFromStroke(stroke: SketchStroke): Point3D[] {
     return points;
   }
 
-  /*
-   * PERFECTE RECHTHOEK
-   */
   if (stroke.type === "rectangle") {
-    const x = stroke.x;
-    const y = stroke.y;
+    const left = stroke.x;
 
-    const right = x + stroke.width;
+    const bottom = stroke.y;
 
-    const top = y + stroke.height;
+    const right = stroke.x + stroke.width;
+
+    const top = stroke.y + stroke.height;
 
     return [
       {
-        x,
-        y,
+        x: left,
+        y: bottom,
         z: 0,
       },
 
       {
         x: right,
-        y,
+        y: bottom,
         z: 0,
       },
 
@@ -219,18 +192,14 @@ function getPointsFromStroke(stroke: SketchStroke): Point3D[] {
       },
 
       {
-        x,
+        x: left,
         y: top,
         z: 0,
       },
 
-      /*
-       * Terug naar beginpunt zodat
-       * de rechthoek gesloten wordt.
-       */
       {
-        x,
-        y,
+        x: left,
+        y: bottom,
         z: 0,
       },
     ];

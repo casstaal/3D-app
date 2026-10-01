@@ -55,24 +55,12 @@ export default function ActiveSketch({
 
   const ndcPointer = useMemo(() => new THREE.Vector2(), []);
 
-  /*
-   * Voltooide strokes binnen de
-   * huidige sketch.
-   */
   const [strokes, setStrokes] = useState<SketchStroke[]>([]);
 
-  /*
-   * Punten van de stroke die op dit
-   * moment wordt getekend.
-   */
   const [currentPoints, setCurrentPoints] = useState<Point3D[]>([]);
 
   const wasDrawingRef = useRef(false);
 
-  /*
-   * De positie/oriëntatie van het
-   * sketchvlak wordt één keer opgeslagen.
-   */
   const initialTransform = useRef<{
     position: THREE.Vector3;
     quaternion: THREE.Quaternion;
@@ -91,19 +79,10 @@ export default function ActiveSketch({
 
   const transform = initialTransform.current;
 
-  /*
-   * Hand tekenen.
-   */
   useEffect(() => {
     const isDrawing =
       mode === "draw" && pointer !== null && planeRef.current !== null;
 
-    /*
-     * We waren aan het tekenen,
-     * maar de draw gesture is gestopt.
-     *
-     * → stroke afronden.
-     */
     if (!isDrawing) {
       if (wasDrawingRef.current) {
         finishCurrentStroke();
@@ -122,11 +101,6 @@ export default function ActiveSketch({
       return;
     }
 
-    /*
-     * Screen coordinates
-     * →
-     * Three.js Normalized Device Coordinates.
-     */
     ndcPointer.set(
       (pointer.x / viewportWidth) * 2 - 1,
 
@@ -135,10 +109,6 @@ export default function ActiveSketch({
 
     raycaster.setFromCamera(ndcPointer, camera);
 
-    /*
-     * Waar raakt de ray ons
-     * huidige sketchvlak?
-     */
     const intersections = raycaster.intersectObject(planeRef.current, false);
 
     if (intersections.length === 0) {
@@ -147,29 +117,14 @@ export default function ActiveSketch({
 
     const worldPoint = intersections[0].point.clone();
 
-    /*
-     * Heel belangrijk:
-     *
-     * world space
-     * →
-     * lokale 2D sketch space.
-     */
     const localPoint = groupRef.current.worldToLocal(worldPoint);
 
     const point: Point3D = {
       x: localPoint.x,
       y: localPoint.y,
-
-      /*
-       * Binnen het sketchvlak
-       * blijft z altijd 0.
-       */
       z: 0,
     };
 
-    /*
-     * Nieuwe stroke beginnen.
-     */
     if (!wasDrawingRef.current) {
       setCurrentPoints([point]);
 
@@ -178,9 +133,6 @@ export default function ActiveSketch({
       return;
     }
 
-    /*
-     * Punt toevoegen.
-     */
     setCurrentPoints((current) => {
       const last = current[current.length - 1];
 
@@ -194,10 +146,6 @@ export default function ActiveSketch({
 
       const distance = Math.sqrt(dx * dx + dy * dy);
 
-      /*
-       * Niet duizenden punten opslaan
-       * als de hand nauwelijks beweegt.
-       */
       if (distance < 0.02) {
         return current;
       }
@@ -246,9 +194,6 @@ export default function ActiveSketch({
     });
   }
 
-  /*
-   * Finish Sketch button.
-   */
   useEffect(() => {
     if (finishSignal === 0) {
       return;
@@ -256,11 +201,6 @@ export default function ActiveSketch({
 
     let finalStrokes = [...strokes];
 
-    /*
-     * Als de gebruiker nog aan het tekenen
-     * was terwijl Finish Sketch wordt
-     * ingedrukt, nemen we die stroke ook mee.
-     */
     if (currentPoints.length > 1) {
       const finalCurrentStroke = buildStroke(currentPoints);
 
@@ -294,9 +234,6 @@ export default function ActiveSketch({
 
     onFinish(sketch);
 
-    /*
-     * Nieuwe lege sketch beginnen.
-     */
     setStrokes([]);
     setCurrentPoints([]);
 
@@ -309,9 +246,6 @@ export default function ActiveSketch({
       position={transform.position}
       quaternion={transform.quaternion}
     >
-      {/*
-       * Onzichtbaar tekenvlak.
-       */}
       <mesh ref={planeRef}>
         <planeGeometry args={[6, 4]} />
 
@@ -323,23 +257,10 @@ export default function ActiveSketch({
         />
       </mesh>
 
-      {/*
-       * Reeds afgeronde strokes.
-       *
-       * Deze kunnen nu free/line/
-       * circle/rectangle zijn.
-       */}
       {strokes.map((stroke) => (
         <SketchLine key={stroke.id} stroke={stroke} />
       ))}
 
-      {/*
-       * Tijdens het tekenen laten we
-       * gewoon de ruwe handlijn zien.
-       *
-       * Pas bij loslaten wordt hij
-       * eventueel een perfecte shape.
-       */}
       {currentPoints.length > 1 && (
         <SketchLine
           stroke={{

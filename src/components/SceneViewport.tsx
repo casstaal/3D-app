@@ -21,45 +21,60 @@ import HandResize from "./scene/HandResize";
 
 type SceneViewportProps = {
   mode: GestureMode;
+
   drawingMode: DrawingMode;
 
   pointer: Point | null;
+
   secondPointer: Point | null;
 
   viewportWidth: number;
+
   viewportHeight: number;
 
   sketches: Sketch[];
 
   finishSignal: number;
+
   deselectSignal: number;
 
   onFinishSketch: (sketch: Sketch) => void;
 
   onUpdateStroke: (
     strokeId: string,
+
     updater: (stroke: SketchStroke) => SketchStroke,
   ) => void;
 
   onSelectionProgressChange: (progress: number) => void;
 
   onSelectionStateChange: (isSelected: boolean) => void;
+
+  onSelectedStrokeChange: (strokeId: string | null) => void;
 };
 
 export default function SceneViewport({
   mode,
+
   drawingMode,
+
   pointer,
   secondPointer,
+
   viewportWidth,
   viewportHeight,
+
   sketches,
+
   finishSignal,
   deselectSignal,
+
   onFinishSketch,
   onUpdateStroke,
+
   onSelectionProgressChange,
   onSelectionStateChange,
+  onSelectedStrokeChange,
 }: SceneViewportProps) {
   const selectableRoot = useRef<THREE.Group>(null);
 
@@ -69,23 +84,26 @@ export default function SceneViewport({
 
   useEffect(() => {
     onSelectionStateChange(selectedId !== null);
-  }, [selectedId, onSelectionStateChange]);
+
+    onSelectedStrokeChange(selectedId);
+  }, [selectedId, onSelectionStateChange, onSelectedStrokeChange]);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setSelectedId(null);
-        setHoveredId(null);
-
-        onSelectionProgressChange(0);
+      if (event.key !== "Escape") {
+        return;
       }
+
+      setSelectedId(null);
+
+      setHoveredId(null);
+
+      onSelectionProgressChange(0);
     }
 
     window.addEventListener("keydown", handleKeyDown);
 
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onSelectionProgressChange]);
 
   useEffect(() => {
@@ -99,11 +117,6 @@ export default function SceneViewport({
     onSelectionProgressChange(0);
   }, [deselectSignal, onSelectionProgressChange]);
 
-  const allStrokes = useMemo(
-    () => sketches.flatMap((sketch) => sketch.strokes),
-    [sketches],
-  );
-
   return (
     <Canvas
       gl={{
@@ -112,13 +125,17 @@ export default function SceneViewport({
       }}
       camera={{
         position: [0, 0, 5],
+
         fov: 45,
+
         near: 0.1,
         far: 100,
       }}
       style={{
         width: "100%",
+
         height: "100%",
+
         background: "transparent",
       }}
     >
@@ -126,7 +143,6 @@ export default function SceneViewport({
 
       <directionalLight position={[5, 5, 5]} intensity={2} />
 
-      {/* Opgeslagen sketches */}
       <group ref={selectableRoot}>
         {sketches.map((sketch) => (
           <SavedSketch
@@ -138,9 +154,7 @@ export default function SceneViewport({
         ))}
       </group>
 
-      {/* Huidige actieve sketch */}
       <ActiveSketch
-        key={sketches.length}
         mode={mode}
         drawingMode={drawingMode}
         pointer={pointer}
@@ -150,7 +164,6 @@ export default function SceneViewport({
         onFinish={onFinishSketch}
       />
 
-      {/* Selecteren */}
       <HandSelection
         mode={mode}
         pointer={pointer}
@@ -163,20 +176,17 @@ export default function SceneViewport({
         onProgressChange={onSelectionProgressChange}
       />
 
-      {/* Resizen */}
       <HandResize
         mode={mode}
         pointer={pointer}
         secondPointer={secondPointer}
         selectedId={selectedId}
-        strokes={allStrokes}
+        sketches={sketches}
         onUpdateStroke={onUpdateStroke}
       />
 
-      {/* Hand camera rotation */}
       <HandOrbit mode={mode} pointer={pointer} />
 
-      {/* Muis camera rotation */}
       <OrbitControls
         enabled={mode !== "rotate" && mode !== "resize"}
         target={[0, 0, 0]}
@@ -192,6 +202,7 @@ export default function SceneViewport({
 
 type HandOrbitProps = {
   mode: GestureMode;
+
   pointer: Point | null;
 };
 
@@ -215,10 +226,11 @@ function HandOrbit({ mode, pointer }: HandOrbitProps) {
   const wasRotating = useRef(false);
 
   useEffect(() => {
-    const isRotating = mode === "rotate" && pointer !== null;
+    const rotating = mode === "rotate" && pointer !== null;
 
-    if (!isRotating) {
+    if (!rotating) {
       lastPointer.current = null;
+
       wasRotating.current = false;
 
       return;

@@ -170,11 +170,14 @@ function tryBuildCircle(stroke: FreeStroke): CircleStroke | null {
   if (standardDeviation < averageRadius * 0.18) {
     return {
       id: stroke.id,
+
       type: "circle",
 
       center,
 
       radius: averageRadius,
+
+      depth: 0,
     };
   }
 
@@ -213,6 +216,8 @@ function tryBuildRectangle(stroke: FreeStroke): RectangleStroke | null {
 
       width: box.width,
       height: box.height,
+
+      depth: 0,
     };
   }
 

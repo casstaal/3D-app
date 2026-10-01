@@ -4,27 +4,40 @@ export type Point3D = {
   z: number;
 };
 
-export type FreeStroke = {
+export type QuaternionData = {
+  x: number;
+  y: number;
+  z: number;
+  w: number;
+};
+
+export type FreeShape = {
   id: string;
   type: "free";
+
   points: Point3D[];
 };
 
-export type LineStroke = {
+export type LineShape = {
   id: string;
   type: "line";
+
   start: Point3D;
   end: Point3D;
 };
 
-export type CircleStroke = {
+export type CircleShape = {
   id: string;
   type: "circle";
+
   center: Point3D;
+
   radius: number;
+
+  depth: number;
 };
 
-export type RectangleStroke = {
+export type RectangleShape = {
   id: string;
   type: "rectangle";
 
@@ -33,25 +46,28 @@ export type RectangleStroke = {
 
   width: number;
   height: number;
+
+  depth: number;
 };
 
-export type SketchStroke =
-  | FreeStroke
-  | LineStroke
-  | CircleStroke
-  | RectangleStroke;
+export type ShapeObject = FreeShape | LineShape | CircleShape | RectangleShape;
 
 export type Sketch = {
   id: string;
 
   position: Point3D;
 
-  quaternion: {
-    x: number;
-    y: number;
-    z: number;
-    w: number;
-  };
+  quaternion: QuaternionData;
 
-  strokes: SketchStroke[];
+  strokes: ShapeObject[];
 };
+
+export type SketchStroke = ShapeObject;
+
+export type FreeStroke = FreeShape;
+
+export type LineStroke = LineShape;
+
+export type CircleStroke = CircleShape;
+
+export type RectangleStroke = RectangleShape;
