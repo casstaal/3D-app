@@ -1,6 +1,9 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
+
 import { OrbitControls } from "@react-three/drei";
+
 import { useEffect, useMemo, useRef, useState } from "react";
+
 import * as THREE from "three";
 
 import type {
@@ -9,17 +12,19 @@ import type {
   Point,
 } from "../features/handTracking/types";
 
-import type { Sketch } from "../features/modeling/sketchTypes";
+import type { Sketch, SketchStroke } from "../features/modeling/sketchTypes";
 
 import ActiveSketch from "./scene/ActiveSketch";
 import SavedSketch from "./scene/SavedSketch";
 import HandSelection from "./scene/HandSelection";
+import HandResize from "./scene/HandResize";
 
 type SceneViewportProps = {
   mode: GestureMode;
   drawingMode: DrawingMode;
 
   pointer: Point | null;
+  secondPointer: Point | null;
 
   viewportWidth: number;
   viewportHeight: number;
@@ -27,12 +32,17 @@ type SceneViewportProps = {
   sketches: Sketch[];
 
   finishSignal: number;
-
   deselectSignal: number;
 
   onFinishSketch: (sketch: Sketch) => void;
 
+  onUpdateStroke: (
+    strokeId: string,
+    updater: (stroke: SketchStroke) => SketchStroke,
+  ) => void;
+
   onSelectionProgressChange: (progress: number) => void;
+
   onSelectionStateChange: (isSelected: boolean) => void;
 };
 
@@ -40,18 +50,17 @@ export default function SceneViewport({
   mode,
   drawingMode,
   pointer,
+  secondPointer,
   viewportWidth,
   viewportHeight,
   sketches,
   finishSignal,
   deselectSignal,
   onFinishSketch,
+  onUpdateStroke,
   onSelectionProgressChange,
   onSelectionStateChange,
 }: SceneViewportProps) {
-  /*
-   * ALLE hooks moeten binnen SceneViewport staan.
-   */
   const selectableRoot = useRef<THREE.Group>(null);
 
   const [hoveredId, setHoveredId] = useState<string | null>(null);
@@ -62,14 +71,12 @@ export default function SceneViewport({
     onSelectionStateChange(selectedId !== null);
   }, [selectedId, onSelectionStateChange]);
 
-  /*
-   * Escape = deselect.
-   */
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setSelectedId(null);
         setHoveredId(null);
+
         onSelectionProgressChange(0);
       }
     }
@@ -81,9 +88,6 @@ export default function SceneViewport({
     };
   }, [onSelectionProgressChange]);
 
-  /*
-   * Deselect-knop uit CameraViewport.
-   */
   useEffect(() => {
     if (deselectSignal === 0) {
       return;
@@ -91,8 +95,14 @@ export default function SceneViewport({
 
     setSelectedId(null);
     setHoveredId(null);
+
     onSelectionProgressChange(0);
   }, [deselectSignal, onSelectionProgressChange]);
+
+  const allStrokes = useMemo(
+    () => sketches.flatMap((sketch) => sketch.strokes),
+    [sketches],
+  );
 
   return (
     <Canvas
@@ -140,7 +150,7 @@ export default function SceneViewport({
         onFinish={onFinishSketch}
       />
 
-      {/* Selectie */}
+      {/* Selecteren */}
       <HandSelection
         mode={mode}
         pointer={pointer}
@@ -153,12 +163,22 @@ export default function SceneViewport({
         onProgressChange={onSelectionProgressChange}
       />
 
+      {/* Resizen */}
+      <HandResize
+        mode={mode}
+        pointer={pointer}
+        secondPointer={secondPointer}
+        selectedId={selectedId}
+        strokes={allStrokes}
+        onUpdateStroke={onUpdateStroke}
+      />
+
       {/* Hand camera rotation */}
       <HandOrbit mode={mode} pointer={pointer} />
 
       {/* Muis camera rotation */}
       <OrbitControls
-        enabled={mode !== "rotate"}
+        enabled={mode !== "rotate" && mode !== "resize"}
         target={[0, 0, 0]}
         enablePan={false}
         enableZoom
@@ -183,11 +203,13 @@ function HandOrbit({ mode, pointer }: HandOrbitProps) {
   const lastPointer = useRef<Point | null>(null);
 
   const currentTheta = useRef(0);
+
   const currentPhi = useRef(Math.PI / 2);
 
   const radius = useRef(5);
 
   const targetTheta = useRef(0);
+
   const targetPhi = useRef(Math.PI / 2);
 
   const wasRotating = useRef(false);

@@ -28,16 +28,25 @@ export default function CameraViewport() {
     selectionProgress,
   });
 
-  const { sketches, addSketch, clearSketches, removeLastSketch } =
+  const { sketches, addSketch, clearSketches, removeLastSketch, updateStroke } =
     useSketchStore();
 
   const [finishSignal, setFinishSignal] = useState(0);
   const [deselectSignal, setDeselectSignal] = useState(0);
 
+  const videoWidth = videoRef.current?.videoWidth ?? 1280;
+
   const mirroredPointer = pointer
     ? {
-        x: (videoRef.current?.videoWidth ?? 1280) - pointer.x,
+        x: videoWidth - pointer.x,
         y: pointer.y,
+      }
+    : null;
+
+  const mirroredSecondPointer = secondPointer
+    ? {
+        x: videoWidth - secondPointer.x,
+        y: secondPointer.y,
       }
     : null;
 
@@ -63,12 +72,14 @@ export default function CameraViewport() {
           mode={mode}
           drawingMode={drawingMode}
           pointer={mirroredPointer}
+          secondPointer={mirroredSecondPointer}
           viewportWidth={videoRef.current?.videoWidth ?? 1280}
           viewportHeight={videoRef.current?.videoHeight ?? 720}
           sketches={sketches}
           finishSignal={finishSignal}
           deselectSignal={deselectSignal}
           onFinishSketch={addSketch}
+          onUpdateStroke={updateStroke}
           onSelectionProgressChange={setSelectionProgress}
           onSelectionStateChange={setHasSelection}
         />

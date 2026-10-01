@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import type { Sketch } from "./sketchTypes";
+import type { Sketch, SketchStroke } from "./sketchTypes";
 
 export function useSketchStore() {
   const [sketches, setSketches] = useState<Sketch[]>([]);
@@ -16,10 +16,40 @@ export function useSketchStore() {
     setSketches((current) => current.slice(0, -1));
   }, []);
 
+  const updateStroke = useCallback(
+    (strokeId: string, updater: (stroke: SketchStroke) => SketchStroke) => {
+      setSketches((currentSketches) =>
+        currentSketches.map((sketch) => {
+          const containsStroke = sketch.strokes.some(
+            (stroke) => stroke.id === strokeId,
+          );
+
+          if (!containsStroke) {
+            return sketch;
+          }
+
+          return {
+            ...sketch,
+
+            strokes: sketch.strokes.map((stroke) => {
+              if (stroke.id !== strokeId) {
+                return stroke;
+              }
+
+              return updater(stroke);
+            }),
+          };
+        }),
+      );
+    },
+    [],
+  );
+
   return {
     sketches,
     addSketch,
     clearSketches,
     removeLastSketch,
+    updateStroke,
   };
 }
