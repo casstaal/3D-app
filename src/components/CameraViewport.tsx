@@ -1,5 +1,24 @@
 import { useRef, useState } from "react";
 
+import {
+  Camera,
+  Check,
+  Download,
+  Hand,
+  MousePointer2,
+  OctagonX,
+  Play,
+  Redo2,
+  RotateCcw,
+  Shapes,
+  Square,
+  Trash2,
+  Undo2,
+  Video,
+  Waves,
+  Box,
+} from "lucide-react";
+
 import { useCamera } from "../hooks/useCamera";
 
 import { useHandTracking } from "../hooks/useHandTracking";
@@ -24,7 +43,6 @@ export default function CameraViewport() {
     autoStart: false,
 
     width: 1280,
-
     height: 720,
 
     facingMode: "user",
@@ -75,7 +93,6 @@ export default function CameraViewport() {
   const mirroredPointer = pointer
     ? {
         x: videoWidth - pointer.x,
-
         y: pointer.y,
       }
     : null;
@@ -83,42 +100,24 @@ export default function CameraViewport() {
   const mirroredSecondPointer = secondPointer
     ? {
         x: videoWidth - secondPointer.x,
-
         y: secondPointer.y,
       }
     : null;
 
-  function handleExtrude() {
-    if (!selectedStrokeId) {
-      console.warn("Selecteer eerst een rectangle of circle.");
+  const selectedStroke = selectedStrokeId
+    ? sketches
+        .flatMap((sketch) => sketch.strokes)
+        .find((stroke) => stroke.id === selectedStrokeId)
+    : null;
 
-      return;
-    }
+  const canUseObjectActions = hasSelection && selectedStroke !== null;
 
-    const selectedStroke = sketches
-      .flatMap((sketch) => sketch.strokes)
-      .find((stroke) => stroke.id === selectedStrokeId);
+  const canExtrude =
+    canUseObjectActions &&
+    (selectedStroke?.type === "rectangle" || selectedStroke?.type === "circle");
 
-    if (!selectedStroke) {
-      return;
-    }
-
-    if (
-      selectedStroke.type !== "rectangle" &&
-      selectedStroke.type !== "circle"
-    ) {
-      console.warn("Alleen rectangles en circles kunnen worden geëxtrudeerd.");
-
-      return;
-    }
-
-    extrudeStroke(selectedStrokeId, 0.5);
-  }
-
-  function handleClear() {
-    clearSketches();
-
-    setSelectedStrokeId(null);
+  function handleFinishSketch() {
+    setFinishSignal((current) => current + 1);
   }
 
   function handleUndo() {
@@ -127,16 +126,34 @@ export default function CameraViewport() {
     setSelectedStrokeId(null);
   }
 
+  function handleClear() {
+    clearSketches();
+
+    setSelectedStrokeId(null);
+  }
+
+  function handleDeselect() {
+    if (!canUseObjectActions) {
+      return;
+    }
+
+    setDeselectSignal((current) => current + 1);
+  }
+
+  function handleExtrude() {
+    if (!selectedStrokeId || !canExtrude) {
+      return;
+    }
+
+    extrudeStroke(selectedStrokeId, 0.5);
+  }
+
+  function handleExportSTL() {
+    console.log("Export STL");
+  }
+
   return (
-    <div
-      className="
-        relative
-        h-full
-        w-full
-        overflow-hidden
-        bg-black
-      "
-    >
+    <div className="relative h-full w-full overflow-hidden bg-[#929292]">
       <video
         ref={videoRef}
         autoPlay
@@ -153,13 +170,7 @@ export default function CameraViewport() {
         "
       />
 
-      <div
-        className="
-          absolute
-          inset-0
-          z-20
-        "
-      >
+      <div className="absolute inset-0 z-20">
         <SceneViewport
           mode={mode}
           drawingMode={drawingMode}
@@ -191,118 +202,380 @@ export default function CameraViewport() {
         "
       />
 
-      {/* CONTROLS */}
-
-      <div
+      <aside
         className="
           absolute
           left-4
           top-4
           z-50
-          flex
-          gap-2
+          w-[180px]
+          overflow-hidden
+          rounded-xl
+          border
+          border-white/10
+          bg-[#202329]/95
+          p-3
+          text-white
+          shadow-2xl
+          backdrop-blur-md
         "
       >
-        <button
-          onClick={() => void startCamera()}
-          className="rounded-xl bg-white/10 px-4 py-2 text-sm font-medium text-white backdrop-blur hover:bg-white/20"
+        <ToolbarSection title="CAMERA" icon={<Camera size={13} />} first>
+          <div className="grid grid-cols-2 gap-2">
+            <ToolbarButton
+              active={isActive}
+              disabled={isLoading || isActive}
+              onClick={() => void startCamera()}
+              icon={<Video size={15} />}
+              variant="green"
+            >
+              Start
+            </ToolbarButton>
+
+            <ToolbarButton
+              disabled={!isActive}
+              onClick={stopCamera}
+              icon={<Square size={13} fill="currentColor" />}
+            >
+              Stop
+            </ToolbarButton>
+          </div>
+        </ToolbarSection>
+
+        <ToolbarSection title="TEKEN MODUS" icon={<Shapes size={13} />}>
+          <div className="grid grid-cols-2 gap-2">
+            <ToolbarButton
+              active={drawingMode === "free"}
+              onClick={() => setDrawingMode("free")}
+              icon={<Waves size={16} />}
+              variant="blue"
+              title="Free draw"
+            />
+
+            <ToolbarButton
+              active={drawingMode === "shape-detect"}
+              onClick={() => setDrawingMode("shape-detect")}
+              icon={<Shapes size={16} />}
+              variant="blue"
+              title="Shape detect"
+            />
+          </div>
+        </ToolbarSection>
+
+        <ToolbarSection title="TEKEN ACTIES" icon={<MousePointer2 size={13} />}>
+          <div className="flex flex-col gap-1.5">
+            <ToolbarButton
+              onClick={handleFinishSketch}
+              icon={<Check size={15} />}
+              fullWidth
+            >
+              Finish sketch
+            </ToolbarButton>
+
+            <ToolbarButton
+              onClick={handleUndo}
+              disabled={sketches.length === 0}
+              icon={<Undo2 size={15} />}
+              fullWidth
+            >
+              Undo
+            </ToolbarButton>
+
+            <ToolbarButton
+              onClick={handleClear}
+              disabled={sketches.length === 0}
+              icon={<Trash2 size={15} />}
+              fullWidth
+            >
+              Clear
+            </ToolbarButton>
+          </div>
+        </ToolbarSection>
+
+        <ToolbarSection title="OBJECT ACTIES" icon={<Box size={13} />}>
+          <div className="flex flex-col gap-1.5">
+            <ToolbarButton
+              onClick={handleExtrude}
+              disabled={!canExtrude}
+              icon={<Box size={15} />}
+              variant="orange"
+              fullWidth
+              title={
+                !hasSelection
+                  ? "Selecteer eerst een object"
+                  : !canExtrude
+                    ? "Alleen een rectangle of circle kan worden geëxtrudeerd"
+                    : "Extrude geselecteerd object"
+              }
+            >
+              Extrude
+            </ToolbarButton>
+            <ToolbarButton
+              onClick={handleDeselect}
+              disabled={!canUseObjectActions}
+              icon={<OctagonX size={15} />}
+              fullWidth
+            >
+              Deselect
+            </ToolbarButton>
+          </div>
+        </ToolbarSection>
+      </aside>
+      <div
+        className="
+          pointer-events-none
+          absolute
+          right-4
+          top-4
+          z-50
+          min-w-[150px]
+          rounded-xl
+          border
+          border-white/10
+          bg-[#202329]/95
+          px-4
+          py-3
+          text-white
+          shadow-xl
+          backdrop-blur-md
+        "
+      >
+        <StatusRow
+          icon={
+            <span
+              className={`
+                h-2
+                w-2
+                rounded-full
+                ${
+                  isActive
+                    ? "bg-emerald-400"
+                    : isLoading
+                      ? "bg-amber-400"
+                      : "bg-zinc-500"
+                }
+              `}
+            />
+          }
         >
-          Start
-        </button>
-
-        <button
-          onClick={stopCamera}
-          className="rounded-xl bg-white/10 px-4 py-2 text-sm font-medium text-white backdrop-blur hover:bg-white/20"
-        >
-          Stop
-        </button>
-
-        <button
-          onClick={() => setFinishSignal((current) => current + 1)}
-          className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500"
-        >
-          Finish Sketch
-        </button>
-
-        <button
-          onClick={handleExtrude}
-          disabled={!selectedStrokeId}
-          className="rounded-xl bg-orange-600 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-40 hover:bg-orange-500"
-        >
-          Extrude
-        </button>
-
-        <button
-          onClick={handleClear}
-          className="rounded-xl bg-white/10 px-4 py-2 text-sm font-medium text-white backdrop-blur hover:bg-white/20"
-        >
-          Clear
-        </button>
-
-        <button
-          onClick={handleUndo}
-          className="rounded-xl bg-white/10 px-4 py-2 text-sm font-medium text-white backdrop-blur hover:bg-white/20"
-        >
-          Undo
-        </button>
-      </div>
-
-      {/* DRAWING MODE */}
-
-      <div className="absolute left-4 top-16 z-50 flex gap-2">
-        <button
-          onClick={() => setDrawingMode("free")}
-          className={`rounded-xl px-4 py-2 text-sm font-medium text-white backdrop-blur ${
-            drawingMode === "free"
-              ? "bg-green-600/80"
-              : "bg-white/10 hover:bg-white/20"
-          }`}
-        >
-          Free draw
-        </button>
-
-        <button
-          onClick={() => setDrawingMode("shape-detect")}
-          className={`rounded-xl px-4 py-2 text-sm font-medium text-white backdrop-blur ${
-            drawingMode === "shape-detect"
-              ? "bg-green-600/80"
-              : "bg-white/10 hover:bg-white/20"
-          }`}
-        >
-          Shape detect
-        </button>
-      </div>
-
-      {error && (
-        <div className="absolute bottom-4 left-4 z-50 rounded-xl bg-red-500/20 p-3 text-sm text-red-100 backdrop-blur">
-          {error}
-        </div>
-      )}
-
-      {/* STATUS */}
-
-      <div className="absolute right-4 top-4 z-50 flex flex-col gap-2">
-        <div className="rounded-full bg-black/60 px-3 py-1 text-sm text-white backdrop-blur">
           {isLoading
             ? "Camera starten..."
             : isActive
               ? "Camera actief"
               : "Camera uit"}
-        </div>
+        </StatusRow>
 
-        <div className="rounded-full bg-black/60 px-3 py-1 text-sm text-white backdrop-blur">
-          Gesture: {mode}
-        </div>
-
-        {hasSelection && (
-          <button
-            onClick={() => setDeselectSignal((current) => current + 1)}
-            className="rounded-xl bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-500"
-          >
-            Deselect
-          </button>
-        )}
+        <StatusRow icon={<Hand size={16} />}>Gesture: {mode}</StatusRow>
       </div>
+      <button
+        type="button"
+        onClick={handleExportSTL}
+        className="
+          absolute
+          bottom-4
+          right-4
+          z-50
+          flex
+          h-11
+          items-center
+          gap-2
+          rounded-xl
+          border
+          border-white/10
+          bg-[#202329]/95
+          px-5
+          text-sm
+          font-semibold
+          text-white
+          shadow-xl
+          backdrop-blur-md
+          transition
+          hover:bg-[#30343b]
+          active:scale-[0.98]
+        "
+      >
+        <Download size={16} />
+        Export STL
+      </button>
+
+      {error && (
+        <div
+          className="
+            absolute
+            bottom-4
+            left-[212px]
+            z-50
+            max-w-md
+            rounded-xl
+            border
+            border-red-400/20
+            bg-red-950/80
+            px-4
+            py-3
+            text-sm
+            text-red-100
+            shadow-xl
+            backdrop-blur-md
+          "
+        >
+          {error}
+        </div>
+      )}
+    </div>
+  );
+}
+
+type ToolbarSectionProps = {
+  title: string;
+
+  icon?: React.ReactNode;
+
+  children: React.ReactNode;
+
+  first?: boolean;
+};
+
+function ToolbarSection({
+  title,
+  icon,
+  children,
+  first = false,
+}: ToolbarSectionProps) {
+  return (
+    <section
+      className={`
+        ${first ? "" : "mt-3 border-t border-white/10 pt-3"}
+      `}
+    >
+      <div
+        className="
+          mb-2
+          flex
+          items-center
+          gap-1.5
+          px-1
+          text-[10px]
+          font-semibold
+          uppercase
+          tracking-[0.08em]
+          text-zinc-400
+        "
+      >
+        {icon}
+
+        <span>{title}</span>
+      </div>
+
+      {children}
+    </section>
+  );
+}
+
+type ToolbarButtonProps = {
+  children?: React.ReactNode;
+
+  icon?: React.ReactNode;
+
+  onClick?: () => void;
+
+  disabled?: boolean;
+
+  active?: boolean;
+
+  fullWidth?: boolean;
+
+  title?: string;
+
+  variant?: "default" | "green" | "blue" | "orange";
+};
+
+function ToolbarButton({
+  children,
+  icon,
+  onClick,
+  disabled = false,
+  active = false,
+  fullWidth = false,
+  title,
+  variant = "default",
+}: ToolbarButtonProps) {
+  const activeClass =
+    variant === "green"
+      ? "bg-emerald-600 hover:bg-emerald-500"
+      : variant === "blue"
+        ? "bg-blue-600 hover:bg-blue-500"
+        : variant === "orange"
+          ? "bg-orange-600 hover:bg-orange-500"
+          : "bg-zinc-600 hover:bg-zinc-500";
+
+  return (
+    <button
+      type="button"
+      title={title}
+      disabled={disabled}
+      onClick={onClick}
+      className={`
+        flex
+        h-9
+        items-center
+        justify-center
+        gap-2
+        rounded-lg
+        px-3
+        text-xs
+        font-semibold
+        text-white
+        transition
+
+        ${fullWidth ? "w-full justify-start" : ""}
+
+        ${
+          active
+            ? activeClass
+            : variant === "orange" && !disabled
+              ? "bg-orange-600 hover:bg-orange-500"
+              : "bg-white/10 hover:bg-white/15"
+        }
+
+        ${
+          disabled
+            ? "cursor-not-allowed opacity-35 hover:bg-white/10"
+            : "cursor-pointer active:scale-[0.98]"
+        }
+      `}
+    >
+      {icon}
+
+      {children && <span>{children}</span>}
+    </button>
+  );
+}
+
+type StatusRowProps = {
+  icon: React.ReactNode;
+
+  children: React.ReactNode;
+};
+
+function StatusRow({ icon, children }: StatusRowProps) {
+  return (
+    <div
+      className="
+        flex
+        h-8
+        items-center
+        gap-2
+        whitespace-nowrap
+        text-xs
+        font-semibold
+        text-zinc-100
+      "
+    >
+      <span className="flex w-4 items-center justify-center text-zinc-300">
+        {icon}
+      </span>
+
+      <span>{children}</span>
     </div>
   );
 }
