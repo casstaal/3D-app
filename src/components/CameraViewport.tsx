@@ -27,6 +27,8 @@ import type { DrawingMode } from "../features/handTracking/types";
 
 import { useSketchStore } from "../features/modeling/sketchStore";
 
+import { exportSketchesToSTL } from "../features/modeling/stlExporter";
+
 import SceneViewport from "./SceneViewport";
 
 export default function CameraViewport() {
@@ -116,6 +118,14 @@ export default function CameraViewport() {
     canUseObjectActions &&
     (selectedStroke?.type === "rectangle" || selectedStroke?.type === "circle");
 
+  const hasExportableObjects = sketches.some((sketch) =>
+    sketch.strokes.some(
+      (stroke) =>
+        (stroke.type === "rectangle" || stroke.type === "circle") &&
+        stroke.depth > 0,
+    ),
+  );
+
   function handleFinishSketch() {
     setFinishSignal((current) => current + 1);
   }
@@ -149,7 +159,7 @@ export default function CameraViewport() {
   }
 
   function handleExportSTL() {
-    console.log("Export STL");
+    exportSketchesToSTL(sketches, "hand-cad-model.stl");
   }
 
   return (
@@ -370,6 +380,7 @@ export default function CameraViewport() {
       <button
         type="button"
         onClick={handleExportSTL}
+        disabled={!hasExportableObjects}
         className="
           absolute
           bottom-4
