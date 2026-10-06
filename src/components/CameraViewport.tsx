@@ -54,9 +54,8 @@ export default function CameraViewport() {
 
   const [selectionProgress, setSelectionProgress] = useState(0);
 
-  const [hasSelection, setHasSelection] = useState(false);
-
   const [selectedStrokeId, setSelectedStrokeId] = useState<string | null>(null);
+  const hasSelection = selectedStrokeId !== null;
 
   const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -105,14 +104,13 @@ export default function CameraViewport() {
         .find((stroke) => stroke.id === selectedStrokeId)
     : null;
 
-  const canUseObjectActions = hasSelection && selectedStroke !== null;
+  const canUseObjectActions = selectedStroke !== null;
 
   const canExtrude =
     canUseObjectActions &&
     (selectedStroke?.type === "rectangle" || selectedStroke?.type === "circle");
 
   const canCopy =
-    hasSelection &&
     selectedStroke !== null &&
     ((selectedStroke?.type === "rectangle" && selectedStroke.depth > 0) ||
       (selectedStroke?.type === "circle" && selectedStroke.depth > 0));
@@ -138,7 +136,11 @@ export default function CameraViewport() {
       return;
     }
 
-    copyStroke(selectedStrokeId);
+    const newStrokeId = crypto.randomUUID();
+
+    copyStroke(selectedStrokeId, newStrokeId);
+
+    setSelectedStrokeId(newStrokeId);
   }, [copySignal, selectedStrokeId, canCopy, copyStroke]);
 
   function handleFinishSketch() {
@@ -209,7 +211,7 @@ export default function CameraViewport() {
           onFinishSketch={addSketch}
           onUpdateStroke={updateStroke}
           onSelectionProgressChange={setSelectionProgress}
-          onSelectionStateChange={setHasSelection}
+          selectedStrokeId={selectedStrokeId}
           onSelectedStrokeChange={setSelectedStrokeId}
         />
       </div>

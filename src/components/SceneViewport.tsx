@@ -48,7 +48,7 @@ type SceneViewportProps = {
 
   onSelectionProgressChange: (progress: number) => void;
 
-  onSelectionStateChange: (isSelected: boolean) => void;
+  selectedStrokeId: string | null;
 
   onSelectedStrokeChange: (strokeId: string | null) => void;
 };
@@ -73,20 +73,16 @@ export default function SceneViewport({
   onUpdateStroke,
 
   onSelectionProgressChange,
-  onSelectionStateChange,
+  selectedStrokeId,
   onSelectedStrokeChange,
 }: SceneViewportProps) {
   const selectableRoot = useRef<THREE.Group>(null);
 
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-
   useEffect(() => {
-    onSelectionStateChange(selectedId !== null);
-
-    onSelectedStrokeChange(selectedId);
-  }, [selectedId, onSelectionStateChange, onSelectedStrokeChange]);
+    onSelectedStrokeChange(selectedStrokeId);
+  }, [selectedStrokeId, onSelectedStrokeChange]);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -94,7 +90,7 @@ export default function SceneViewport({
         return;
       }
 
-      setSelectedId(null);
+      onSelectedStrokeChange(null);
 
       setHoveredId(null);
 
@@ -111,7 +107,7 @@ export default function SceneViewport({
       return;
     }
 
-    setSelectedId(null);
+    onSelectedStrokeChange(null);
     setHoveredId(null);
 
     onSelectionProgressChange(0);
@@ -149,7 +145,7 @@ export default function SceneViewport({
             key={sketch.id}
             sketch={sketch}
             hoveredId={hoveredId}
-            selectedId={selectedId}
+            selectedId={selectedStrokeId}
           />
         ))}
       </group>
@@ -170,9 +166,9 @@ export default function SceneViewport({
         viewportWidth={viewportWidth}
         viewportHeight={viewportHeight}
         selectableRoot={selectableRoot}
-        selectedId={selectedId}
+        selectedId={selectedStrokeId}
         onHoverChange={setHoveredId}
-        onSelectionChange={setSelectedId}
+        onSelectionChange={onSelectedStrokeChange}
         onProgressChange={onSelectionProgressChange}
       />
 
@@ -180,7 +176,7 @@ export default function SceneViewport({
         mode={mode}
         pointer={pointer}
         secondPointer={secondPointer}
-        selectedId={selectedId}
+        selectedId={selectedStrokeId}
         sketches={sketches}
         onUpdateStroke={onUpdateStroke}
       />

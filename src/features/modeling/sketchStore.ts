@@ -75,7 +75,7 @@ export function useSketchStore() {
     [],
   );
 
-  const copyStroke = useCallback((strokeId: string) => {
+  const copyStroke = useCallback((strokeId: string, newStrokeId: string) => {
     setSketches((currentSketches) =>
       currentSketches.map((sketch) => {
         const stroke = sketch.strokes.find((stroke) => stroke.id === strokeId);
@@ -92,37 +92,39 @@ export function useSketchStore() {
           return sketch;
         }
 
-        const newId = crypto.randomUUID();
-
-        const offset = 0.25;
-
-        let copy: SketchStroke;
+        const gap = 0.25;
 
         if (stroke.type === "rectangle") {
-          copy = {
+          const offsetX = Math.abs(stroke.width) + gap;
+
+          const copy: SketchStroke = {
             ...stroke,
 
-            id: newId,
+            id: newStrokeId,
 
-            x: stroke.x + offset,
-
-            y: stroke.y + offset,
+            x: stroke.x + offsetX,
           };
-        } else {
-          copy = {
-            ...stroke,
 
-            id: newId,
+          return {
+            ...sketch,
 
-            center: {
-              ...stroke.center,
-
-              x: stroke.center.x + offset,
-
-              y: stroke.center.y + offset,
-            },
+            strokes: [...sketch.strokes, copy],
           };
         }
+
+        const offsetX = stroke.radius * 2 + gap;
+
+        const copy: SketchStroke = {
+          ...stroke,
+
+          id: newStrokeId,
+
+          center: {
+            ...stroke.center,
+
+            x: stroke.center.x + offsetX,
+          },
+        };
 
         return {
           ...sketch,
