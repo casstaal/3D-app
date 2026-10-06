@@ -75,6 +75,64 @@ export function useSketchStore() {
     [],
   );
 
+  const copyStroke = useCallback((strokeId: string) => {
+    setSketches((currentSketches) =>
+      currentSketches.map((sketch) => {
+        const stroke = sketch.strokes.find((stroke) => stroke.id === strokeId);
+
+        if (!stroke) {
+          return sketch;
+        }
+
+        if (stroke.type !== "rectangle" && stroke.type !== "circle") {
+          return sketch;
+        }
+
+        if (stroke.depth <= 0) {
+          return sketch;
+        }
+
+        const newId = crypto.randomUUID();
+
+        const offset = 0.25;
+
+        let copy: SketchStroke;
+
+        if (stroke.type === "rectangle") {
+          copy = {
+            ...stroke,
+
+            id: newId,
+
+            x: stroke.x + offset,
+
+            y: stroke.y + offset,
+          };
+        } else {
+          copy = {
+            ...stroke,
+
+            id: newId,
+
+            center: {
+              ...stroke.center,
+
+              x: stroke.center.x + offset,
+
+              y: stroke.center.y + offset,
+            },
+          };
+        }
+
+        return {
+          ...sketch,
+
+          strokes: [...sketch.strokes, copy],
+        };
+      }),
+    );
+  }, []);
+
   return {
     sketches,
 
@@ -87,5 +145,7 @@ export function useSketchStore() {
     updateStroke,
 
     extrudeStroke,
+
+    copyStroke,
   };
 }

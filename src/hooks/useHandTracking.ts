@@ -8,7 +8,11 @@ import {
 
 import { mapHandToGesture } from "../features/handTracking/gestureMapper";
 
-import type { GestureMode, Point } from "../features/handTracking/types";
+import type {
+  GestureAction,
+  GestureMode,
+  Point,
+} from "../features/handTracking/types";
 
 type UseHandTrackingOptions = {
   videoRef: React.RefObject<HTMLVideoElement | null>;
@@ -24,6 +28,7 @@ type UseHandTrackingResult = {
   mode: GestureMode;
   pointer: Point | null;
   secondPointer: Point | null;
+  copySignal: number;
 };
 
 export function useHandTracking({
@@ -40,10 +45,14 @@ export function useHandTracking({
 
   const selectionProgressRef = useRef(selectionProgress);
 
+  const previousActionRef = useRef<GestureAction>(null);
+
   const [mode, setMode] = useState<GestureMode>("idle");
 
   const [pointer, setPointer] = useState<Point | null>(null);
   const [secondPointer, setSecondPointer] = useState<Point | null>(null);
+
+  const [copySignal, setCopySignal] = useState(0);
 
   useEffect(() => {
     selectionProgressRef.current = selectionProgress;
@@ -113,6 +122,8 @@ export function useHandTracking({
       setPointer(null);
       setSecondPointer(null);
 
+      previousActionRef.current = null;
+
       lastVideoTimeRef.current = -1;
 
       return;
@@ -163,6 +174,15 @@ export function useHandTracking({
           setPointer(gesture.pointer);
           setSecondPointer(gesture.secondPointer ?? null);
 
+          if (
+            gesture.action === "copy" &&
+            previousActionRef.current !== "copy"
+          ) {
+            setCopySignal((current) => current + 1);
+          }
+
+          previousActionRef.current = gesture.action;
+
           drawPointer(canvas, gesture.pointer, gesture.mode);
 
           if (gesture.secondPointer) {
@@ -184,6 +204,7 @@ export function useHandTracking({
           setMode("idle");
           setPointer(null);
           setSecondPointer(null);
+          previousActionRef.current = null;
         }
       }
 
@@ -205,6 +226,7 @@ export function useHandTracking({
     mode,
     pointer,
     secondPointer,
+    copySignal,
   };
 }
 

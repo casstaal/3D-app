@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   Camera,
@@ -60,28 +60,21 @@ export default function CameraViewport() {
 
   const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  const { mode, pointer, secondPointer } = useHandTracking({
+  const { mode, pointer, secondPointer, copySignal } = useHandTracking({
     videoRef,
-
     overlayCanvasRef,
-
     enabled: isActive,
-
     selectionProgress,
   });
 
   const {
     sketches,
-
     addSketch,
-
     clearSketches,
-
     removeLastSketch,
-
     updateStroke,
-
     extrudeStroke,
+    copyStroke,
   } = useSketchStore();
 
   const [finishSignal, setFinishSignal] = useState(0);
@@ -118,6 +111,12 @@ export default function CameraViewport() {
     canUseObjectActions &&
     (selectedStroke?.type === "rectangle" || selectedStroke?.type === "circle");
 
+  const canCopy =
+    hasSelection &&
+    selectedStroke !== null &&
+    ((selectedStroke?.type === "rectangle" && selectedStroke.depth > 0) ||
+      (selectedStroke?.type === "circle" && selectedStroke.depth > 0));
+
   const hasExportableObjects = sketches.some((sketch) =>
     sketch.strokes.some(
       (stroke) =>
@@ -125,6 +124,22 @@ export default function CameraViewport() {
         stroke.depth > 0,
     ),
   );
+
+  const lastCopySignalRef = useRef(copySignal);
+
+  useEffect(() => {
+    if (copySignal === lastCopySignalRef.current) {
+      return;
+    }
+
+    lastCopySignalRef.current = copySignal;
+
+    if (!selectedStrokeId || !canCopy) {
+      return;
+    }
+
+    copyStroke(selectedStrokeId);
+  }, [copySignal, selectedStrokeId, canCopy, copyStroke]);
 
   function handleFinishSketch() {
     setFinishSignal((current) => current + 1);
